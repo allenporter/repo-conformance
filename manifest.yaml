@@ -4,12 +4,23 @@ repos:
 - name: k8s-gitops
   exclude:
   - setupcfg
+  - worktree # TODO: Add ability to exclude subjects (setupcfg)
 - name: ical
+  exclude: 
+    - worktree  # TODO: Enable flake8 conformance
 - name: pyrainbird
+  exclude: 
+    - worktree  # TODO: Needs github URL fixed
 - name: gcal_sync
+  exclude: 
+    - worktree  # TODO: Enable flake8 conformance
 - name: flux-local
 - name: python-google-nest-sdm
+  exclude: 
+    - worktree  # TODO: Enable non-minimal setup.py
 - name: hostdb
+  exclude: 
+    - worktree  # TODO: Enable flake8 conformance
 - name: repo-conformance
 exclude:
 - github
