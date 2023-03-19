@@ -9,22 +9,10 @@ from typing import Any
 import yaml
 
 from .manifest import parse_manifest
+from .list import ListAction
 
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class ListAction:
-    """Repo list action."""
-
-    def run(  # type: ignore[no-untyped-def]
-        self,
-        **kwargs,  # pylint: disable=unused-argument
-    ) -> None:
-        """Async Action implementation."""
-        manifest = parse_manifest()
-        for repo in manifest.repos:
-            print(f"name: {repo.name} user: {repo.user or manifest.user}")
 
 
 def main() -> None:
@@ -50,17 +38,13 @@ def main() -> None:
     parser.add_argument(
         "--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     )
-
     subparsers = parser.add_subparsers(dest="command", help="Command", required=True)
 
-    list_args = subparsers.add_parser("list", help="List repositories in the manifest")
-    list_args.set_defaults(cls=ListAction)
+    ListAction.register(subparsers)
 
     args = parser.parse_args()
-
     if args.log_level:
         logging.basicConfig(level=args.log_level)
-
     action = args.cls()
     try:
         action.run(**vars(args))
