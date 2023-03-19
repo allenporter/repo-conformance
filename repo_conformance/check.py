@@ -58,6 +58,13 @@ class CheckAction:
             required=False,
             default=[],
         )
+        args.add_argument(
+            "--include",
+            help="The names of conformance tests to include",
+            type=lambda x: re.split("[ ,]+", x),
+            required=False,
+            default=[],
+        )
         args.set_defaults(cls=CheckAction)
         return args
 
@@ -65,6 +72,7 @@ class CheckAction:
         self,
         repo: str | None,
         exclude: list[str] | None = None,
+        include: list[str] | None = None,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
         """Async Action implementation."""
@@ -79,7 +87,7 @@ class CheckAction:
                 [
                     fail.of(r.name)
                     for fail in REPO_CHECKS.run_checks(
-                        r, exclude_checks=set(exclude + r.exclude)
+                        r, exclude_checks=set(exclude + r.exclude) - set(include)
                     )
                 ]
             )
