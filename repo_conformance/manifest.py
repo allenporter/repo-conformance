@@ -19,6 +19,13 @@ class Repo(BaseModel):
     user: str | None = None
     """Name of the repository owner, otherwise uses default in manifest."""
 
+    exclude: list[str] = Field(default_factory=list)
+    """Conformance tests to exclude."""
+
+    def __str__(self) -> str:
+        """Human readable name for check output."""
+        return f"{self.user}/{self.name}"
+
 
 class Manifest(BaseModel):
     """Repo manifest."""
@@ -26,15 +33,19 @@ class Manifest(BaseModel):
     user: str
     """Default git username that owns the repositories."""
 
-    repos: list[Repo] = Field(default_factory=[])
+    repos: list[Repo] = Field(default_factory=list)
+
+    exclude: list[str] = Field(default_factory=list)
+    """Conformance tests to exclude."""
 
     @root_validator(pre=True)
     def propagate_user(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Propagate the user to downstream repos that do not have a user set."""
+        exclude = values.get("exclude", [])
         for repo in values.get("repos", []):
-            if "user" in repo:
-                continue
-            repo["user"] = values.get("user")
+            if "user" not in repo:
+                repo["user"] = values.get("user")
+            repo["exclude"] = repo.get("exclude", []) + exclude
         return values
 
 
