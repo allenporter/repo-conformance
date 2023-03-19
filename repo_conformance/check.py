@@ -56,6 +56,7 @@ class CheckAction:
             help="The names of conformance tests to exclude",
             type=lambda x: re.split("[ ,]+", x),
             required=False,
+            default=[],
         )
         args.set_defaults(cls=CheckAction)
         return args
@@ -63,7 +64,7 @@ class CheckAction:
     def run(  # type: ignore[no-untyped-def]
         self,
         repo: str | None,
-        exclude: list[str],
+        exclude: list[str] | None = None,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
         """Async Action implementation."""

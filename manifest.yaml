@@ -11,3 +11,5 @@ repos:
 - name: python-google-nest-sdm
 - name: hostdb
 - name: repo-conformance
+exclude:
+- github
