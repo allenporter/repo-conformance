@@ -8,8 +8,8 @@ from typing import Any
 
 import yaml
 
-from .manifest import parse_manifest
 from .list import ListAction
+from .check import CheckAction
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", help="Command", required=True)
 
     ListAction.register(subparsers)
+    CheckAction.register(subparsers)
 
     args = parser.parse_args()
     if args.log_level:

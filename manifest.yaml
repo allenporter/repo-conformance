@@ -6,7 +6,7 @@ repos:
 - name: pyrainbird
 - name: gcal_sync
 - name: flux-local
-- name: python-google-nest-sdm
 - name: homelab
+- name: python-google-nest-sdm
 - name: hostdb
 - name: repo-conformance
