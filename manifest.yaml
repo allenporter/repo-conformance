@@ -2,11 +2,12 @@
 user: allenporter
 repos:
 - name: k8s-gitops
+  exclude:
+  - setupcfg
 - name: ical
 - name: pyrainbird
 - name: gcal_sync
 - name: flux-local
-- name: homelab
 - name: python-google-nest-sdm
 - name: hostdb
 - name: repo-conformance
