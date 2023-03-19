@@ -44,6 +44,3 @@ def setupcfg(repo: Repo, worktree: pathlib.Path) -> None:
         raise CheckError(
             f"Python project url does not match repo url: {url} != {expected_url}"
         )
-
-    if "flake8" in config:
-        raise CheckError("Found flake8 config in setup.cfg; switch to ruff")
