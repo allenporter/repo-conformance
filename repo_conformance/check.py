@@ -83,14 +83,13 @@ class CheckAction:
         for r in manifest.repos:
             if repo and r.name != repo:
                 continue
-            errors.extend(
-                [
-                    fail.of(r.name)
-                    for fail in REPO_CHECKS.run_checks(
-                        r, exclude_checks=set(exclude + r.exclude) - set(include)
-                    )
-                ]
+            if not r.user:
+                r.user = manifest.user
+            r.checks.exclude = list(
+                (set(r.checks.exclude) | set(manifest.checks.exclude) | set(exclude)) - set(include)
             )
+
+            errors.extend([fail.of(r.name) for fail in REPO_CHECKS.run_checks(r, None)])
         if errors:
             print_errors(errors)
             sys.exit(1)

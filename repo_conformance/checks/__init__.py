@@ -1,3 +1,3 @@
 """Conformance checks module."""
 
-from . import github, worktree, setupcfg  # noqa
+from . import github, worktree, setupcfg, setuppy  # noqa

@@ -1,26 +1,35 @@
 ---
 user: allenporter
+checks:
+  exclude:
+  # Avoid unnecessary API usage after initial setup
+  - github
 repos:
 - name: k8s-gitops
-  exclude:
-  - setupcfg
-  - worktree # TODO: Add ability to exclude subjects (setupcfg)
+  checks:
+    exclude:
+    - setuppy
+    - setupcfg
 - name: ical
-  exclude: 
-    - worktree  # TODO: Enable flake8 conformance
+  checks:
+    exclude:
+    - setupcfg  # TODO: Enable flake8 conformance
 - name: pyrainbird
-  exclude: 
-    - worktree  # TODO: Needs github URL fixed
+  checks:
+    exclude:
+    - setupcfg  # TODO: Needs github URL fixed
 - name: gcal_sync
-  exclude: 
-    - worktree  # TODO: Enable flake8 conformance
+  checks:
+    exclude:
+    - setupcfg  # TODO: Enable flake8 conformance
 - name: flux-local
 - name: python-google-nest-sdm
-  exclude: 
-    - worktree  # TODO: Enable non-minimal setup.py
+  checks:
+    exclude:
+    - setuppy
+    - setupcfg  # TODO: Does not have metadata
 - name: hostdb
-  exclude: 
-    - worktree  # TODO: Enable flake8 conformance
+  checks:
+    exclude:
+    - setupcfg  # TODO: Enable flake8 conformance
 - name: repo-conformance
-exclude:
-- github

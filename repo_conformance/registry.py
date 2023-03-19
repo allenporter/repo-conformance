@@ -9,13 +9,14 @@ import logging
 from typing import TypeVar, Generic
 
 from .exceptions import CheckError, Failure
+from .manifest import Repo
 
 
 _LOGGER = logging.getLogger(__name__)
 
 
 T = TypeVar("T")
-Check = Callable[[T], None]
+Check = Callable[[Repo, T], None]
 
 
 class CheckRegistry(Generic[T]):
@@ -34,25 +35,25 @@ class CheckRegistry(Generic[T]):
         """Class method to register a check."""
 
         def wrapper(wrapped_class: Check[T]) -> Check:
+            if wrapped_class.__name__ in self._registry:
+                raise ValueError(f"Misconfiguration with duplicate registry entry '{wrapped_class.__name__}'")
             self._registry[wrapped_class.__name__] = wrapped_class
             return wrapped_class
 
         return wrapper
 
-    def run_checks(
-        self, target: T, exclude_checks: set[str] | None = None
-    ) -> list[Failure]:
+    def run_checks(self, target: Repo, context: T) -> list[Failure]:
         """Run checks against the target object."""
-
-        _LOGGER.debug("Checking %s (exclude_checks=%s)", target, exclude_checks)
+        exclude = set(target.checks.exclude)
+        _LOGGER.debug("Checking %s (exclude_checks=%s)", target, exclude)
         errors = []
         for name, check in self._registry.items():
-            if exclude_checks and name in exclude_checks:
+            if name in exclude:
                 continue
 
             _LOGGER.debug("Checking %s on %s", name, target)
             try:
-                check(target)
+                check(target, context)
             except CheckError as err:
                 for error in err.errors:
                     errors.append(error.of(name))

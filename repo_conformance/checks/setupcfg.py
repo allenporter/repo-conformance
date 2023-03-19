@@ -2,10 +2,12 @@
 
 import configparser
 import logging
+import pathlib
 
 from repo_conformance.exceptions import CheckError
+from repo_conformance.manifest import Repo
 
-from .registries import WORKTREE_CHECKS, WorktreeSpec
+from .registries import WORKTREE_CHECKS
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -15,22 +17,10 @@ URL_FORMAT = "https://github.com/{user}/{repo}"
 
 
 @WORKTREE_CHECKS.register()
-def setupcfg(spec: WorktreeSpec) -> None:
+def setupcfg(repo: Repo, worktree: pathlib.Path) -> None:
     """Verify python project setup.cfg conformance."""
 
-    # Verify minimal use of setup.py
-    setuppy = spec.worktree / "setup.py"
-    if not setuppy.exists():
-        raise CheckError("Repo has no setup.py")
-
-    contents = setuppy.read_text()
-    if "setup()" not in contents:
-        if "setup(" in contents:
-            raise CheckError("Repo has setup.py that is not minimal")
-        raise CheckError("Repo setup.py does not contain setup()")
-
-    # Verify setup.cfg
-    setupcfg = spec.worktree / "setup.cfg"
+    setupcfg = worktree / "setup.cfg"
     if not setupcfg.exists:
         raise CheckError("Repo has no setup.cfg")
 
@@ -43,12 +33,12 @@ def setupcfg(spec: WorktreeSpec) -> None:
     metadata = config["metadata"]
     if "name" not in metadata:
         raise CheckError("setup.cfg does not have 'metadata.name'")
-    if metadata["name"].replace("-", "_") != spec.repo.name.replace("-", "_"):
+    if metadata["name"].replace("-", "_") != repo.name.replace("-", "_"):
         raise CheckError(
             "Python project name does not match repo name: "
-            f"{metadata['name']} != {spec.repo.name}"
+            f"{metadata['name']} != {repo.name}"
         )
-    expected_url = URL_FORMAT.format(user=spec.repo.user, repo=spec.repo.name)
+    expected_url = URL_FORMAT.format(user=repo.user, repo=repo.name)
     url = config["metadata"]["url"]
     if url != expected_url:
         raise CheckError(

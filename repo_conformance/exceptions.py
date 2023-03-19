@@ -39,3 +39,7 @@ class CheckError(Exception):
     def errors(self) -> list[Failure]:
         """Return underlying conformance errors."""
         return self._errors
+
+
+class ManifestError(Exception):
+    """An error parsing the manifest."""
