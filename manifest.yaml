@@ -4,32 +4,38 @@ checks:
   exclude:
   # Avoid unnecessary API usage after initial setup
   - github
+  # Prefer ruff over flake8
+  - flake8
 repos:
 - name: k8s-gitops
   checks:
     exclude:
+    # Not a python project
     - setuppy
     - setupcfg
+    - ruff
 - name: ical
   checks:
     exclude:
-    - setupcfg  # TODO: Enable flake8 conformance
+    - ruff  # TODO: Upgrade to ruff
 - name: pyrainbird
   checks:
     exclude:
     - setupcfg  # TODO: Needs github URL fixed
+    - ruff  # TODO: Upgrade to ruff
 - name: gcal_sync
   checks:
     exclude:
-    - setupcfg  # TODO: Enable flake8 conformance
+    - ruff  # TODO: Upgrade to ruff
 - name: flux-local
 - name: python-google-nest-sdm
   checks:
     exclude:
-    - setuppy
-    - setupcfg  # TODO: Does not have metadata
+    - setuppy   # TODO: Using setup.py instead of setup.cfg
+    - setupcfg
+    - ruff  # TODO: Upgrade to ruff
 - name: hostdb
   checks:
     exclude:
-    - setupcfg  # TODO: Enable flake8 conformance
+    - ruff  # TODO: Upgrade to ruff
 - name: repo-conformance
