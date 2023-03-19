@@ -11,7 +11,7 @@ import git
 from repo_conformance.exceptions import CheckError
 from repo_conformance.manifest import Repo
 
-from .registries import REPO_CHECKS, WORKTREE_CHECKS, WorktreeSpec
+from .registries import REPO_CHECKS, WORKTREE_CHECKS
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,11 +48,10 @@ def repo_worktree(repo: Repo) -> Generator[pathlib.Path, None, None]:
 
 
 @REPO_CHECKS.register()
-def worktree(repo: Repo) -> None:
+def worktree(repo: Repo, target: None) -> None:
     """Run conformance tests on the github worktree."""
 
     with repo_worktree(repo) as worktree:
-        spec = WorktreeSpec(repo=repo, worktree=worktree)
-        errors = WORKTREE_CHECKS.run_checks(spec)
+        errors = WORKTREE_CHECKS.run_checks(repo, context=worktree)
         if errors:
             raise CheckError(errors)

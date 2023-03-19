@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @REPO_CHECKS.register()
-def github(repo: Repo) -> None:
+def github(repo: Repo, context: None) -> None:
     """Verify the github repository configuration via the github API."""
 
     github = Github()

@@ -3,11 +3,24 @@
 import pathlib
 from typing import Any
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, ValidationError, validator
 import yaml
+
+from .exceptions import ManifestError
 
 
 MANIFEST = pathlib.Path("manifest.yaml")
+
+
+class CheckContext(BaseModel):
+    """Context for a specific check."""
+
+    exclude: list[str] = Field(default_factory=list)
+    """Conformance tests to exclude."""
+
+    @validator('exclude', pre=True)
+    def allow_empty(cls, value: Any | None) -> Any:
+        return value or []
 
 
 class Repo(BaseModel):
@@ -19,8 +32,8 @@ class Repo(BaseModel):
     user: str | None = None
     """Name of the repository owner, otherwise uses default in manifest."""
 
-    exclude: list[str] = Field(default_factory=list)
-    """Conformance tests to exclude."""
+    checks: CheckContext = Field(default_factory=CheckContext)
+    """Conformance test check context."""
 
     def __str__(self) -> str:
         """Human readable name for check output."""
@@ -35,22 +48,15 @@ class Manifest(BaseModel):
 
     repos: list[Repo] = Field(default_factory=list)
 
-    exclude: list[str] = Field(default_factory=list)
-    """Conformance tests to exclude."""
-
-    @root_validator(pre=True)
-    def propagate_user(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Propagate the user to downstream repos that do not have a user set."""
-        exclude = values.get("exclude", [])
-        for repo in values.get("repos", []):
-            if "user" not in repo:
-                repo["user"] = values.get("user")
-            repo["exclude"] = repo.get("exclude", []) + exclude
-        return values
+    checks: CheckContext = Field(default_factory=CheckContext)
+    """Conformance test check context."""
 
 
 def parse_manifest() -> Manifest:
     """Read the manifest file into an object."""
     with open(MANIFEST) as fd:
         doc = yaml.load(fd, Loader=yaml.CLoader)
-    return Manifest.parse_obj(doc)
+    try:
+        return Manifest.parse_obj(doc)
+    except ValidationError as err:
+        raise ManifestError(f"Unable to parse manifest {MANIFEST}: {err}") from err
