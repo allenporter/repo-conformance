@@ -18,11 +18,13 @@ _LOGGER = logging.getLogger(__name__)
 PRE_COMMIT_URL = "https://github.com/charliermarsh/ruff-pre-commit"
 
 EXPECTED_PRECOMMIT = {
-  "repo": PRE_COMMIT_URL,
-  "hooks": [{
-    "id": "ruff",
-    "args": [ "--fix", "--exit-non-zero-on-fix"],
-  }],
+    "repo": PRE_COMMIT_URL,
+    "hooks": [
+        {
+            "id": "ruff",
+            "args": ["--fix", "--exit-non-zero-on-fix"],
+        }
+    ],
 }
 
 WANT_DEPS = ["ruff"]
@@ -42,6 +44,7 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
     if config.has_section("flake8"):
         raise CheckError("Found flake8 config in setup.cfg; switch to ruff")
 
+    _LOGGER.debug("Checking requirements for unwanted deps %s", AVOID_DEPS)
     requirements_files = worktree.glob("requirements*")
     requirements = [req.read_text() for req in requirements_files]
     for dep in WANT_DEPS:
@@ -53,14 +56,40 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
 
     pre_commit_config = worktree / ".pre-commit-config.yaml"
     pre_commit = yaml.load(pre_commit_config.read_text(), Loader=yaml.CLoader)
+    pre_commit_repos = [r for r in pre_commit.get("repos", [])]
 
-    ruff_config: dict[str, Any] = next(
-        iter([r for r in pre_commit.get("repos", []) if r["repo"] == PRE_COMMIT_URL]),
-        None,
-    ) or {}
+    # Ignore the repo version, and assume renovate will keep it fresh
+    for repo in pre_commit_repos:
+        if "rev" in repo:
+            del repo["rev"]
+
+    ruff_config: dict[str, Any] = (
+        next(
+            iter([r for r in pre_commit_repos if r["repo"] == PRE_COMMIT_URL]),
+            None,
+        )
+        or {}
+    )
     if ruff_config != EXPECTED_PRECOMMIT:
-        diff = "\n".join(difflib.ndiff(
-            yaml.dump([ruff_config], sort_keys=False).split("\n"),
-            yaml.dump([EXPECTED_PRECOMMIT], sort_keys=False).split("\n")
-        ))
+        diff = "\n".join(
+            difflib.ndiff(
+                yaml.dump([ruff_config], sort_keys=False).split("\n"),
+                yaml.dump([EXPECTED_PRECOMMIT], sort_keys=False).split("\n"),
+            )
+        )
         raise CheckError(f"Ruff pre-commit configuration mismatch:\n{diff}")
+
+    _LOGGER.debug("Checking pre-commit for unwanted deps %s", AVOID_DEPS)
+    for dep in AVOID_DEPS:
+        if any(dep in r["repo"] for r in pre_commit_repos):
+            raise CheckError(f"Found unwanted {dep} dependencies in requirements files")
+
+    renovate_config = worktree / "renovate.json5"
+    if renovate_config.exists():
+        _LOGGER.debug("Checking renovate config for unwanted deps %s", AVOID_DEPS)
+        renovate_data = renovate_config.read_text()
+        for dep in AVOID_DEPS:
+            if dep in renovate_data:
+                raise CheckError(
+                    f"Found unwanted {dep} dependencies in renovate config"
+                )
