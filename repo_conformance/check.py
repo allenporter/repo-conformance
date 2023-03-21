@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from argparse import _SubParsersAction as SubParsersAction
 import logging
 import re
+import pathlib
 import sys
 from typing import cast
 
@@ -65,6 +66,12 @@ class CheckAction:
             required=False,
             default=[],
         )
+        args.add_argument(
+            "--worktree",
+            help="The local worktree path to use instead of cloning the repo",
+            type=pathlib.Path,
+            required=False,
+        )
         args.set_defaults(cls=CheckAction)
         return args
 
@@ -73,9 +80,12 @@ class CheckAction:
         repo: str | None,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        worktree: pathlib.Path | None = None,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
         """Async Action implementation."""
+        if worktree and not repo:
+            raise ValueError("Cannot specify --worktree without a single repo argument")
         if exclude:
             _LOGGER.debug("Excluding checks: %s", exclude)
         manifest = parse_manifest()
@@ -88,6 +98,8 @@ class CheckAction:
             r.checks.exclude = list(
                 (set(r.checks.exclude) | set(manifest.checks.exclude) | set(exclude)) - set(include)
             )
+            if worktree:
+                r.worktree = worktree
 
             errors.extend([fail.of(r.name) for fail in REPO_CHECKS.run_checks(r, None)])
         if errors:

@@ -51,7 +51,10 @@ def repo_worktree(repo: Repo) -> Generator[pathlib.Path, None, None]:
 def worktree(repo: Repo, target: None) -> None:
     """Run conformance tests on the github worktree."""
 
-    with repo_worktree(repo) as worktree:
-        errors = WORKTREE_CHECKS.run_checks(repo, context=worktree)
-        if errors:
-            raise CheckError(errors)
+    if repo.worktree:
+        errors = WORKTREE_CHECKS.run_checks(repo, context=repo.worktree)
+    else:
+        with repo_worktree(repo) as worktree:
+            errors = WORKTREE_CHECKS.run_checks(repo, context=worktree)
+    if errors:
+        raise CheckError(errors)

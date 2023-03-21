@@ -32,6 +32,12 @@ class Repo(BaseModel):
     user: str | None = None
     """Name of the repository owner, otherwise uses default in manifest."""
 
+    worktree: str | None = None
+    """Optional local worktree directory to use instead of a fresh clone.
+
+    This directory will not be modified (e.g. no git pull, etc).
+    """
+
     checks: CheckContext = Field(default_factory=CheckContext)
     """Conformance test check context."""
 
