@@ -53,7 +53,9 @@ def renovate(repo: Repo, worktree: pathlib.Path) -> None:
         diff = "\n".join(
             difflib.ndiff(
                 json.dumps({ASSIGNEES: assignees}, sort_keys=False).split("\n"),
-                json.dumps({ASSIGNEES: assignees + [repo.user]}, sort_keys=False).split("\n"),
+                json.dumps({ASSIGNEES: assignees + [repo.user]}, sort_keys=False).split(
+                    "\n"
+                ),
             )
         )
         raise CheckError(f"Renovate 'assignees' configuration mismatch:\n{diff}")

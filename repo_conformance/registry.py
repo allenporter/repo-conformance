@@ -36,7 +36,10 @@ class CheckRegistry(Generic[T]):
 
         def wrapper(wrapped_class: Check[T]) -> Check:
             if wrapped_class.__name__ in self._registry:
-                raise ValueError(f"Misconfiguration with duplicate registry entry '{wrapped_class.__name__}'")
+                raise ValueError(
+                    "Misconfiguration with duplicate registry entry "
+                    f"'{wrapped_class.__name__}'"
+                )
             self._registry[wrapped_class.__name__] = wrapped_class
             return wrapped_class
 
