@@ -93,3 +93,14 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
                 raise CheckError(
                     f"Found unwanted {dep} dependencies in renovate config"
                 )
+
+    _LOGGER.debug("Checking workflows for unwanted deps %s", AVOID_DEPS)
+    workflow_files = worktree.glob(".github/workflows/*")
+    workflows = [req.read_text() for req in workflow_files]
+    for dep in WANT_DEPS:
+        if not any(dep in content for content in workflows):
+            raise CheckError(f"Missing {dep} dependencies in workflows files")
+    for dep in AVOID_DEPS:
+        if any(dep in content for content in workflows):
+            raise CheckError(f"Found unwanted {dep} dependencies in workflows files")
+
