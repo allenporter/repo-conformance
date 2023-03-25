@@ -19,6 +19,7 @@ EXTENDS = "extends"
 EXPECTED_EXTENDS = [
     "config:base",
 ]
+ASSIGNEES = "assignees"
 PRECOMMIT = "pre-commit"
 EXPECTED_PRECOMMIT = {"enabled": True}
 
@@ -46,6 +47,16 @@ def renovate(repo: Repo, worktree: pathlib.Path) -> None:
             )
         )
         raise CheckError(f"Renovate 'extends' configuration mismatch:\n{diff}")
+
+    assignees = renovate.get(ASSIGNEES, [])
+    if repo.user not in assignees:
+        diff = "\n".join(
+            difflib.ndiff(
+                json.dumps({ASSIGNEES: assignees}, sort_keys=False).split("\n"),
+                json.dumps({ASSIGNEES: assignees + [repo.user]}, sort_keys=False).split("\n"),
+            )
+        )
+        raise CheckError(f"Renovate 'assignees' configuration mismatch:\n{diff}")
 
     precommit = renovate.get(PRECOMMIT, [])
     if precommit != EXPECTED_PRECOMMIT:
