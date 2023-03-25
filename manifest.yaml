@@ -19,10 +19,6 @@ repos:
     exclude:
     - ruff  # TODO: Upgrade to ruff
 - name: pyrainbird
-  checks:
-    exclude:
-    - setupcfg  # TODO: Needs github URL fixed
-    - ruff  # TODO: Upgrade to ruff
 - name: gcal_sync
   checks:
     exclude:
