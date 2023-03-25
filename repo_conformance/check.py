@@ -96,7 +96,8 @@ class CheckAction:
             if not r.user:
                 r.user = manifest.user
             r.checks.exclude = list(
-                (set(r.checks.exclude) | set(manifest.checks.exclude) | set(exclude)) - set(include)
+                (set(r.checks.exclude) | set(manifest.checks.exclude) | set(exclude))
+                - set(include)
             )
             if worktree:
                 r.worktree = worktree

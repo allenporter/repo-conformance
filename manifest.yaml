@@ -33,7 +33,6 @@ repos:
     exclude:
     - setuppy   # TODO: Using setup.py instead of setup.cfg
     - setupcfg
-    - ruff  # TODO: Upgrade to ruff
 - name: hostdb
   checks:
     exclude:

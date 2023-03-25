@@ -1,7 +1,5 @@
 """Verify python project setup.py conformance."""
 
-import configparser
-import logging
 import pathlib
 
 from repo_conformance.exceptions import CheckError
