@@ -73,5 +73,5 @@ def renovate(repo: Repo, worktree: pathlib.Path) -> None:
     if "assignees" not in renovate:
         raise CheckError("Renovate had no default 'assignees' field")
 
-    if not renovate.get("dependencyDashboard"):
-        raise CheckError("Renovate 'dependencyDashboard' is not configured")
+    if "dependencyDashboard" in renovate:
+        raise CheckError("Renovate 'dependencyDashboard' is unnecessary")
