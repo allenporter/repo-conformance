@@ -34,3 +34,8 @@ repos:
     exclude:
     - ruff  # TODO: Upgrade to ruff
 - name: repo-conformance
+- name: rtsp-to-webrtc-client
+  checks:
+    exclude:
+    - setupcfg # Naming
+    - ruff  # TODO: Upgrade to ruff
