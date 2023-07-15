@@ -30,8 +30,9 @@ class CheckRegistry(Generic[T]):
     def __init__(self) -> None:
         """Initialize a CheckRegistry."""
         self._registry = {}
+        self._default = {}
 
-    def register(self) -> Callable[[Check[T]], Check[T]]:
+    def register(self, default: bool = True) -> Callable[[Check[T]], Check[T]]:
         """Class method to register a check."""
 
         def wrapper(wrapped_class: Check[T]) -> Check:
@@ -41,6 +42,7 @@ class CheckRegistry(Generic[T]):
                     f"'{wrapped_class.__name__}'"
                 )
             self._registry[wrapped_class.__name__] = wrapped_class
+            self._default[wrapped_class.__name__] = default
             return wrapped_class
 
         return wrapper
@@ -48,10 +50,13 @@ class CheckRegistry(Generic[T]):
     def run_checks(self, target: Repo, context: T) -> list[Failure]:
         """Run checks against the target object."""
         exclude = set(target.checks.exclude)
+        include = set(target.checks.include)
         _LOGGER.debug("Checking %s (exclude_checks=%s)", target, exclude)
         errors = []
         for name, check in self._registry.items():
             if name in exclude:
+                continue
+            if not self._default[name] and name not in include:
                 continue
 
             _LOGGER.debug("Checking %s on %s", name, target)

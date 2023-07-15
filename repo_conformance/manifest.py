@@ -18,6 +18,9 @@ class CheckContext(BaseModel):
     exclude: list[str] = Field(default_factory=list)
     """Conformance tests to exclude."""
 
+    include: list[str] = Field(default_factory=list)
+    """Non-default conformance tests to include."""
+
     @validator('exclude', pre=True)
     def allow_empty(cls, value: Any | None) -> Any:
         return value or []
