@@ -12,13 +12,21 @@ from .registries import WORKTREE_CHECKS
 
 _LOGGER = logging.getLogger(__name__)
 
-REQUIRES = ">= 3.9"
-VERSIONS = [
-    "3.9",
+REQUIRES = [ ">=3.10", ">=3.11" ]
+WANT_VERSIONS = [
+    [
     "3.10",
     "3.11",
+    ],
+    [
+    "3.11",
+    ],
 ]
-
+AVOID_VERSIONS = [ "3.7", "3.8", "3.9" ]
+PACKAGE_FILES = [
+    ".github/workflows/python-package.yaml",
+    ".github/workflows/python-app.yaml"
+]
 
 @WORKTREE_CHECKS.register()
 def python_version(repo: Repo, worktree: pathlib.Path) -> None:
@@ -41,12 +49,23 @@ def python_version(repo: Repo, worktree: pathlib.Path) -> None:
             f"{list(options.items())}"
         )
     requires = options["python_requires"]
-    if requires != REQUIRES:
+    if not any(req in requires for req in REQUIRES):
         raise CheckError(
             "setup.cfg 'options.python_requires' does not match: "
             f"{requires} != {REQUIRES}"
         )
 
-    workflow = worktree / ".github/workflows/python-package.yaml"
-    if not workflow.exists:
-        raise CheckError("Repo has no .github/workflows/python-package.yaml")
+
+    files = [ worktree / file for file in PACKAGE_FILES ]    
+    if not any([ file.exists() for file in files ]):
+        raise CheckError(f"Repo has no {PACKAGE_FILES}")
+
+    content = ''.join([ file.read_text() for file in files if file.exists() ])
+    for ver_sets in WANT_VERSIONS:
+        if not any(ver in content for ver in ver_sets):
+            raise CheckError(f"Missing python '{ver_sets}' in workflow {PACKAGE_FILES}")
+    for ver in AVOID_VERSIONS:
+        if ver in content:
+            raise CheckError(
+                f"Found unwanted python '{ver}' in workflow {PACKAGE_FILES}"
+            )
