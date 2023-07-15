@@ -82,7 +82,10 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
     _LOGGER.debug("Checking pre-commit for unwanted deps %s", AVOID_DEPS)
     for dep in AVOID_DEPS:
         if any(dep in r["repo"] for r in pre_commit_repos):
-            raise CheckError(f"Found unwanted {dep} dependencies in requirements files")
+            raise CheckError(f"Found unwanted {dep} dependencies in pre-commit files")
+
+    if (worktree / ".pylintrc").exists():
+        raise CheckError("Found unwanted .pylintrc")
 
     renovate_config = worktree / "renovate.json5"
     if renovate_config.exists():
@@ -103,4 +106,3 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
     for dep in AVOID_DEPS:
         if any(dep in content for content in workflows):
             raise CheckError(f"Found unwanted {dep} dependencies in workflows files")
-
