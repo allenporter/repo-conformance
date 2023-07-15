@@ -38,12 +38,14 @@ def renovate(repo: Repo, worktree: pathlib.Path) -> None:
 
     renovate = json5.loads(config_file.read_text())
 
-    extends = renovate.get(EXTENDS, [])
-    if extends != EXPECTED_EXTENDS:
+    extends = set(renovate.get(EXTENDS, []))
+    expected = set(EXPECTED_EXTENDS)
+    extends_expected = extends | expected
+    if extends != extends_expected:
         diff = "\n".join(
             difflib.ndiff(
                 json.dumps({EXTENDS: extends}, sort_keys=False).split("\n"),
-                json.dumps({EXTENDS: EXPECTED_EXTENDS}, sort_keys=False).split("\n"),
+                json.dumps({EXTENDS: extends_expected}, sort_keys=False).split("\n"),
             )
         )
         raise CheckError(f"Renovate 'extends' configuration mismatch:\n{diff}")
