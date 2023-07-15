@@ -13,17 +13,28 @@ repos:
   checks:
     exclude:
     - ruff  # TODO: Upgrade to ruff
+    - python_version
+    include:
+    - pydantic
 - name: pyrainbird
 - name: gcal_sync
   checks:
     exclude:
     - ruff  # TODO: Upgrade to ruff
+    include:
+    - pydantic
 - name: flux-local
+  checks:
+    include:
+    - pydantic
 - name: python-google-nest-sdm
   checks:
     exclude:
     - setuppy   # TODO: Using setup.py instead of setup.cfg
     - setupcfg
+  checks:
+    include:
+    - pydantic
 - name: hostdb
   checks:
     exclude:
