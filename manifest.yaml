@@ -1,11 +1,5 @@
 ---
 user: allenporter
-checks:
-  exclude:
-  # Avoid unnecessary API usage after initial setup
-  - github
-  # Prefer ruff over flake8
-  - flake8
 repos:
 - name: k8s-gitops
   checks:

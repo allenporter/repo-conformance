@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 URL_FORMAT = "https://github.com/{user}/{repo}"
 
 
-@WORKTREE_CHECKS.register()
+@WORKTREE_CHECKS.register(default=False)
 def flake8(repo: Repo, worktree: pathlib.Path) -> None:
     """Verify python project setup.cfg conformance."""
 

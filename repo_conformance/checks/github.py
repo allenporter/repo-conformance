@@ -12,7 +12,7 @@ from .registries import REPO_CHECKS
 _LOGGER = logging.getLogger(__name__)
 
 
-@REPO_CHECKS.register()
+@REPO_CHECKS.register(default=False)
 def github(repo: Repo, context: None) -> None:
     """Verify the github repository configuration via the github API."""
 
