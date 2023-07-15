@@ -14,6 +14,7 @@ repos:
     - setuppy
     - setupcfg
     - ruff
+    - python_version
 - name: ical
   checks:
     exclude:
