@@ -32,7 +32,10 @@ def pydantic(repo: Repo, worktree: pathlib.Path) -> None:
         raise CheckError("setup.cfg does not have 'options'")
     options = config["options"]
     if "install_requires" not in options:
-        raise CheckError(f"setup.cfg does not have 'options.install_requires': {list(options.items())}")
+        raise CheckError(
+            "setup.cfg does not have 'options.install_requires': "
+            f"{list(options.items())}"
+        )
     requires = options["install_requires"]
     if "pydantic" not in requires:
         raise CheckError(

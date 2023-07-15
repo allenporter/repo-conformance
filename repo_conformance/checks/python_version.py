@@ -14,9 +14,9 @@ _LOGGER = logging.getLogger(__name__)
 
 REQUIRES = ">= 3.9"
 VERSIONS = [
-    '3.9',
-    '3.10',
-    '3.11',
+    "3.9",
+    "3.10",
+    "3.11",
 ]
 
 
@@ -36,7 +36,10 @@ def python_version(repo: Repo, worktree: pathlib.Path) -> None:
         raise CheckError("setup.cfg does not have 'options'")
     options = config["options"]
     if "python_requires" not in options:
-        raise CheckError(f"setup.cfg does not have 'options.python_requires': {list(options.items())}")
+        raise CheckError(
+            "setup.cfg does not have 'options.python_requires': "
+            f"{list(options.items())}"
+        )
     requires = options["python_requires"]
     if requires != REQUIRES:
         raise CheckError(
