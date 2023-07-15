@@ -14,6 +14,9 @@ repos:
     include:
     - pydantic
 - name: pyrainbird
+  checks:
+    include:
+    - pydantic
 - name: gcal_sync
   checks:
     include:
@@ -30,12 +33,16 @@ repos:
     - setupcfg
     - python_version
 - name: hostdb
-  checks:
-    exclude:
-    - ruff  # TODO: Upgrade to ruff
 - name: repo-conformance
 - name: rtsp-to-webrtc-client
   checks:
     exclude:
     - setupcfg # Naming
     - ruff  # TODO: Upgrade to ruff
+- name: homeassistant-minecraft-profile
+  checks:
+    exclude:
+    # Not a python library
+    - setupcfg
+    - setuppy
+    - python_version
