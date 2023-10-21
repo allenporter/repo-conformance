@@ -109,3 +109,8 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
     for dep in AVOID_DEPS:
         if any(dep in content for content in workflows):
             raise CheckError(f"Found unwanted {dep} dependencies in workflows files")
+    if any("--format" in content for content in workflows):
+        raise CheckError("Deprecated flag --format found in workflows files")
+    if not any("chartboost/ruff-action@" in content for content in workflows):
+        raise CheckError("Missing 'chartboost/ruff-action' in workflows files")
+    
