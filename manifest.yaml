@@ -39,7 +39,42 @@ repos:
     exclude:
     - setupcfg # Naming
     - ruff  # TODO: Upgrade to ruff
-- name: homeassistant-minecraft-profile
+- name: home-assistant-minecraft-profile
+  checks:
+    exclude:
+    # Not a python library
+    - setupcfg
+    - setuppy
+    - python_version
+- name: home-assistant-synthetic-home
+  checks:
+    exclude:
+    # Not a python library
+    - setupcfg
+    - setuppy
+    - python_version
+- name: home-assistant-datasets
+  checks:
+    exclude:
+    # Not a python library
+    - setupcfg
+    - setuppy
+    - python_version
+- name: home-assistant-config
+  checks:
+    exclude:
+    # Not a python library
+    - setupcfg
+    - setuppy
+    - python_version
+- name: home-assistant-summary-agent
+  checks:
+    exclude:
+    # Not a python library
+    - setupcfg
+    - setuppy
+    - python_version
+- name: home-assistant-ring-keypad
   checks:
     exclude:
     # Not a python library

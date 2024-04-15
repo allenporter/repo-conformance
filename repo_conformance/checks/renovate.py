@@ -34,7 +34,9 @@ def renovate(repo: Repo, worktree: pathlib.Path) -> None:
 
     config_file = worktree / "renovate.json5"
     if not config_file.exists():
-        raise CheckError("No renovate.json5 configuration file found")
+        config_file = worktree / ".github" / "renovate.json5"
+        if not config_file.exists():
+            raise CheckError("No renovate.json5 configuration file found")
 
     renovate = json5.loads(config_file.read_text())
 
