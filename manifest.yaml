@@ -38,7 +38,6 @@ repos:
   checks:
     exclude:
     - setupcfg # Naming
-    - ruff  # TODO: Upgrade to ruff
 - name: home-assistant-minecraft-profile
   checks:
     exclude:

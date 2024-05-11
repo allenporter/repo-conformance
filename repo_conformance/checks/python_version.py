@@ -23,9 +23,10 @@ WANT_VERSIONS = [
     ],
 ]
 AVOID_VERSIONS = [ "3.7", "3.8", "3.9" ]
-PACKAGE_FILES = [
+TEST_FILES = [
     ".github/workflows/python-package.yaml",
-    ".github/workflows/python-app.yaml"
+    ".github/workflows/python-app.yaml",
+    ".github/workflows/test.yaml",
 ]
 
 @WORKTREE_CHECKS.register()
@@ -56,16 +57,16 @@ def python_version(repo: Repo, worktree: pathlib.Path) -> None:
         )
 
 
-    files = [ worktree / file for file in PACKAGE_FILES ]    
+    files = [ worktree / file for file in TEST_FILES ]    
     if not any([ file.exists() for file in files ]):
-        raise CheckError(f"Repo has no {PACKAGE_FILES}")
+        raise CheckError(f"Repo has no {TEST_FILES}")
 
     content = ''.join([ file.read_text() for file in files if file.exists() ])
     for ver_sets in WANT_VERSIONS:
         if not any(ver in content for ver in ver_sets):
-            raise CheckError(f"Missing python '{ver_sets}' in workflow {PACKAGE_FILES}")
+            raise CheckError(f"Missing python '{ver_sets}' in workflow {TEST_FILES}")
     for ver in AVOID_VERSIONS:
         if ver in content:
             raise CheckError(
-                f"Found unwanted python '{ver}' in workflow {PACKAGE_FILES}"
+                f"Found unwanted python '{ver}' in workflow {TEST_FILES}"
             )
