@@ -10,21 +10,9 @@ repos:
     - ruff
     - python_version
 - name: ical
-  checks:
-    include:
-    - pydantic
 - name: pyrainbird
-  checks:
-    include:
-    - pydantic
 - name: gcal_sync
-  checks:
-    include:
-    - pydantic
 - name: flux-local
-  checks:
-    include:
-    - pydantic
 - name: python-google-nest-sdm
   checks:
     exclude:
@@ -81,25 +69,25 @@ repos:
     - setuppy
     - python_version
 ignored_repos:
-  - name: arpspyx
+- name: arpspyx
 
-  # Older/Archived or not python projects
-  - name: gpt3-python-helper
-  - name: hass-local-calendar
-  - name: iphonedisk
-  - name: machsniff
-  - name: mobilesynth
-  - name: mobileterminal
-  - name: mug
-  - name: open-tracker
-  - name: py-games
-  - name: thebends
-  - name: wheels-grpc
+# Older/Archived or not python projects
+- name: gpt3-python-helper
+- name: hass-local-calendar
+- name: iphonedisk
+- name: machsniff
+- name: mobilesynth
+- name: mobileterminal
+- name: mug
+- name: open-tracker
+- name: py-games
+- name: thebends
+- name: wheels-grpc
 
-  # Tutorial reports
-  - name: BeatBox
-  - name: CriminalIntent
-  - name: generative-ai-with-python
-  - name: go-tutorial
-  - name: wcia
-  - name: inventory-tutorial
+# Tutorial reports
+- name: BeatBox
+- name: CriminalIntent
+- name: generative-ai-with-python
+- name: go-tutorial
+- name: wcia
+- name: inventory-tutorial
