@@ -1,9 +1,12 @@
 """Library for parsing the manifest."""
 
 import pathlib
+from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError, validator
+from mashumaro.codecs.yaml import yaml_decode, yaml_encode
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig
 import yaml
 
 from .exceptions import ManifestError
@@ -12,21 +15,21 @@ from .exceptions import ManifestError
 MANIFEST = pathlib.Path("manifest.yaml")
 
 
-class CheckContext(BaseModel):
+@dataclass
+class CheckContext(DataClassDictMixin):
     """Context for a specific check."""
 
-    exclude: list[str] = Field(default_factory=list)
+    exclude: list[str] = field(default_factory=list)
     """Conformance tests to exclude."""
 
-    include: list[str] = Field(default_factory=list)
+    include: list[str] = field(default_factory=list)
     """Non-default conformance tests to include."""
 
-    @validator('exclude', pre=True)
     def allow_empty(cls, value: Any | None) -> Any:
         return value or []
 
-
-class Repo(BaseModel):
+@dataclass
+class Repo(DataClassDictMixin):
     """git repo representation."""
 
     name: str
@@ -41,7 +44,7 @@ class Repo(BaseModel):
     This directory will not be modified (e.g. no git pull, etc).
     """
 
-    checks: CheckContext = Field(default_factory=CheckContext)
+    checks: CheckContext = field(default_factory=CheckContext)
     """Conformance test check context."""
 
     def __str__(self) -> str:
@@ -49,23 +52,24 @@ class Repo(BaseModel):
         return f"{self.user}/{self.name}"
 
 
-class Manifest(BaseModel):
+@dataclass
+class Manifest(DataClassDictMixin):
     """Repo manifest."""
 
     user: str
     """Default git username that owns the repositories."""
 
-    repos: list[Repo] = Field(default_factory=list)
+    repos: list[Repo] = field(default_factory=list)
 
-    checks: CheckContext = Field(default_factory=CheckContext)
+    checks: CheckContext = field(default_factory=CheckContext)
     """Conformance test check context."""
 
 
 def parse_manifest() -> Manifest:
     """Read the manifest file into an object."""
     with open(MANIFEST) as fd:
-        doc = yaml.load(fd, Loader=yaml.CLoader)
+        content = fd.read()
     try:
-        return Manifest.parse_obj(doc)
-    except ValidationError as err:
+        return yaml_decode(content, Manifest)
+    except yaml.YAMLError as err:
         raise ManifestError(f"Unable to parse manifest {MANIFEST}: {err}") from err
