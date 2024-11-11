@@ -3,13 +3,47 @@ user: allenporter
 repos:
 - name: k8s-gitops
 - name: ical
+  checks:
+    include:
+    - cruft
 - name: pyrainbird
+  checks:
+    include:
+    - cruft
 - name: gcal_sync
+  checks:
+    include:
+    - cruft
 - name: flux-local
+  checks:
+    include:
+    - cruft
 - name: python-google-nest-sdm
+  checks:
+    include:
+    - cruft
+- name: python-google-photos-library-api
+  checks:
+    include:
+    - cruft
 - name: hostdb
+  checks:
+    include:
+    - cruft
 - name: repo-conformance
+  checks:
+    include:
+    - cruft
 - name: rtsp-to-webrtc-client
+  checks:
+    include:
+    - cruft
+- name: synthetic-home
+  checks:
+    include:
+    - cruft
+- name: home-assistant-journal-assistant
+- name: home-assistant-supernote-cloud
 - name: home-assistant-minecraft-profile
 - name: home-assistant-synthetic-home
 - name: home-assistant-datasets

@@ -103,7 +103,6 @@ class CheckAction:
             )
             if worktree:
                 r.worktree = str(worktree)
-
             errors.extend([fail.of(r.name) for fail in REPO_CHECKS.run_checks(r, None)])
         if errors:
             print_errors(errors)

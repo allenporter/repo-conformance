@@ -1,3 +1,3 @@
 """Conformance checks module."""
 
-from . import github, worktree  # noqa
+from . import github, worktree, cruft  # noqa

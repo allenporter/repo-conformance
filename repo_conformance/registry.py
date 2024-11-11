@@ -51,11 +51,8 @@ class CheckRegistry(Generic[T]):
         """Run checks against the target object."""
         exclude = set(target.checks.exclude)
         include = set(target.checks.include)
-        _LOGGER.debug("Checking %s (exclude_checks=%s)", target, exclude)
+        _LOGGER.debug("Checking %s (exclude_checks=%s, include_checks=%s)", target, exclude, include)
         errors = []
-        for check in exclude | include:
-            if check not in self._registry:
-                raise ValueError(f"Unknown check '{check}'")
         for name, check in self._registry.items():
             if name in exclude:
                 continue
