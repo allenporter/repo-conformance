@@ -4,9 +4,8 @@ import pathlib
 from dataclasses import dataclass, field
 from typing import Any
 
-from mashumaro.codecs.yaml import yaml_decode, yaml_encode
-from mashumaro import DataClassDictMixin, field_options
-from mashumaro.config import BaseConfig
+from mashumaro.codecs.yaml import yaml_decode
+from mashumaro import DataClassDictMixin
 import yaml
 
 from .exceptions import ManifestError
@@ -27,6 +26,7 @@ class CheckContext(DataClassDictMixin):
 
     def allow_empty(cls, value: Any | None) -> Any:
         return value or []
+
 
 @dataclass
 class Repo(DataClassDictMixin):
@@ -50,6 +50,7 @@ class Repo(DataClassDictMixin):
     def __str__(self) -> str:
         """Human readable name for check output."""
         return f"{self.user}/{self.name}"
+
 
 @dataclass
 class IgnoredRepo(DataClassDictMixin):

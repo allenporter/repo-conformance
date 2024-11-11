@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from argparse import _SubParsersAction as SubParsersAction
 from typing import cast
 
-from github import Github, GithubException
+from github import Github
 
 from .manifest import parse_manifest
 
@@ -18,7 +18,9 @@ class ListReposAction:
     ) -> ArgumentParser:
         args = cast(
             ArgumentParser,
-            subparsers.add_parser("list_repos", help="List github repositories for the user.")
+            subparsers.add_parser(
+                "list_repos", help="List github repositories for the user."
+            ),
         )
         args.set_defaults(cls=ListReposAction)
         return args
@@ -29,16 +31,9 @@ class ListReposAction:
     ) -> None:
         """Async Action implementation."""
         manifest = parse_manifest()
-        manifest_repos = {
-            repo.name: repo
-            for repo in manifest.repos
-        }
-        ignored_manifest_repos = {
-            repo.name: repo
-            for repo in manifest.ignored_repos
-        }
+        manifest_repos = {repo.name: repo for repo in manifest.repos}
+        ignored_manifest_repos = {repo.name: repo for repo in manifest.ignored_repos}
         github = Github()
-        
 
         for repo in github.get_user(manifest.user).get_repos():
             if repo.fork or repo.archived or repo.private:

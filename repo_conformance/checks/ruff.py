@@ -56,7 +56,7 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
 
     pre_commit_config = worktree / ".pre-commit-config.yaml"
     if not pre_commit_config.exists():
-        raise CheckError(f"Missing .pre-commit-config.yaml")
+        raise CheckError("Missing .pre-commit-config.yaml")
 
     pre_commit = yaml.load(pre_commit_config.read_text(), Loader=yaml.CLoader)
     pre_commit_repos = [r for r in pre_commit.get("repos", [])]
@@ -113,4 +113,3 @@ def ruff(repo: Repo, worktree: pathlib.Path) -> None:
         raise CheckError("Deprecated flag --format found in workflows files")
     if not any("chartboost/ruff-action@" in content for content in workflows):
         raise CheckError("Missing 'chartboost/ruff-action' in workflows files")
-    
