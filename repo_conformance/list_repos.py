@@ -13,9 +13,7 @@ class ListReposAction:
     """List action."""
 
     @classmethod
-    def register(
-        cls, subparsers: SubParsersAction  # type: ignore[type-arg]
-    ) -> ArgumentParser:
+    def register(cls, subparsers: SubParsersAction) -> ArgumentParser:
         args = cast(
             ArgumentParser,
             subparsers.add_parser(

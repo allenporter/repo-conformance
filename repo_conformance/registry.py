@@ -29,8 +29,8 @@ class CheckRegistry(Generic[T]):
 
     def __init__(self) -> None:
         """Initialize a CheckRegistry."""
-        self._registry = {}
-        self._default = {}
+        self._registry: dict[str, Check[T]] = {}
+        self._default: dict[str, bool] = {}
 
     def register(self, default: bool = True) -> Callable[[Check[T]], Check[T]]:
         """Class method to register a check."""

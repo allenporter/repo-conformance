@@ -35,9 +35,7 @@ class CheckAction:
     """Check action."""
 
     @classmethod
-    def register(
-        cls, subparsers: SubParsersAction  # type: ignore[type-arg]
-    ) -> ArgumentParser:
+    def register(cls, subparsers: SubParsersAction) -> ArgumentParser:
         args = cast(
             ArgumentParser,
             subparsers.add_parser(
@@ -96,11 +94,15 @@ class CheckAction:
             if not r.user:
                 r.user = manifest.user
             r.checks.exclude = list(
-                (set(r.checks.exclude) | set(manifest.checks.exclude) | set(exclude))
-                - set(include)
+                (
+                    set(r.checks.exclude)
+                    | set(manifest.checks.exclude)
+                    | set(exclude or ())
+                )
+                - set(include or ())
             )
             if worktree:
-                r.worktree = worktree
+                r.worktree = str(worktree)
 
             errors.extend([fail.of(r.name) for fail in REPO_CHECKS.run_checks(r, None)])
         if errors:
