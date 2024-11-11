@@ -1,4 +1,5 @@
-"""Minimal setup for the project, see setup.cfg"""
+"""Library for packaging the project."""
+
 from setuptools import setup
 
 setup()
