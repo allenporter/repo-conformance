@@ -51,6 +51,13 @@ class Repo(DataClassDictMixin):
         """Human readable name for check output."""
         return f"{self.user}/{self.name}"
 
+@dataclass
+class IgnoredRepo(DataClassDictMixin):
+    """Ignored repo representation."""
+
+    name: str
+    """Name of the repository."""
+
 
 @dataclass
 class Manifest(DataClassDictMixin):
@@ -63,6 +70,8 @@ class Manifest(DataClassDictMixin):
 
     checks: CheckContext = field(default_factory=CheckContext)
     """Conformance test check context."""
+
+    ignored_repos: list[IgnoredRepo] = field(default_factory=list)
 
 
 def parse_manifest() -> Manifest:

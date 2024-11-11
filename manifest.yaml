@@ -80,3 +80,26 @@ repos:
     - setupcfg
     - setuppy
     - python_version
+ignored_repos:
+  - name: arpspyx
+
+  # Older/Archived or not python projects
+  - name: gpt3-python-helper
+  - name: hass-local-calendar
+  - name: iphonedisk
+  - name: machsniff
+  - name: mobilesynth
+  - name: mobileterminal
+  - name: mug
+  - name: open-tracker
+  - name: py-games
+  - name: thebends
+  - name: wheels-grpc
+
+  # Tutorial reports
+  - name: BeatBox
+  - name: CriminalIntent
+  - name: generative-ai-with-python
+  - name: go-tutorial
+  - name: wcia
+  - name: inventory-tutorial

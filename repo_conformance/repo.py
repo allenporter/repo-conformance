@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from .list import ListAction
+from .list_repos import ListReposAction
 from .check import CheckAction
 
 
@@ -41,6 +42,7 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", help="Command", required=True)
 
     ListAction.register(subparsers)
+    ListReposAction.register(subparsers)
     CheckAction.register(subparsers)
 
     args = parser.parse_args()
