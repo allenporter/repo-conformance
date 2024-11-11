@@ -6,7 +6,7 @@ import json
 import pathlib
 from functools import cache
 
-from github import Github, GithubException
+from github import Github
 
 from repo_conformance.exceptions import CheckError
 from repo_conformance.manifest import Repo
