@@ -42,15 +42,32 @@ repos:
   checks:
     include:
     - cruft
-- name: home-assistant-journal-assistant
-- name: home-assistant-supernote-cloud
-- name: home-assistant-minecraft-profile
-- name: home-assistant-synthetic-home
-- name: home-assistant-datasets
 - name: home-assistant-config
+- name: home-assistant-datasets
+- name: home-assistant-journal-assistant
+  checks:
+    include:
+    - cruft
+- name: home-assistant-supernote-cloud
+  checks:
+    include:
+    - cruft
+- name: home-assistant-minecraft-profile
+  checks:
+    include:
+    - cruft
+- name: home-assistant-synthetic-home
+  checks:
+    include:
+    - cruft
 - name: home-assistant-summary-agent
+  checks:
+    include:
+    - cruft
 - name: home-assistant-ring-keypad
-  
+  checks:
+    include:
+    - cruft  
 ignored_repos:
 # Older/Archived or not python projects
 - name: arpspyx
