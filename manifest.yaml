@@ -67,7 +67,7 @@ repos:
 - name: home-assistant-ring-keypad
   checks:
     include:
-    - cruft  
+    - cruft
 ignored_repos:
 # Older/Archived or not python projects
 - name: arpspyx
