@@ -68,6 +68,14 @@ repos:
   checks:
     include:
     - cruft
+- name: home-assistant-model-context-protocol
+  checks:
+    include:
+    - cruft
+- name: mcp-server-home-assistant
+  checks:
+    include:
+    - cruft
 ignored_repos:
 # Older/Archived or not python projects
 - name: arpspyx
