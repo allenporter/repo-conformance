@@ -89,7 +89,7 @@ def commit_changes(git_repo: git.Repo, comit_message: str) -> None:
 
 
 def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> str:
-    git_repo.remote().push(refspec=f"{CRUFT_BRANCH}:{CRUFT_BRANCH}")
+    git_repo.remote().push(refspec=f"{CRUFT_BRANCH}:{CRUFT_BRANCH}", force=True)
     _LOGGER.info("Branch '%s' pushed to remote.", CRUFT_BRANCH)
     _LOGGER.info("Creating PR")
     result = run(
