@@ -24,7 +24,6 @@ PR_BODY = "Automatically generated PR from `repo-conformance` to apply updates u
 COMMIT_MSG = "Apply cruft updates"
 
 
-
 @contextmanager
 def repo_working_dir(
     repo: Repo, worktree: pathlib.Path | None
@@ -64,7 +63,6 @@ def verify_gh_auth() -> None:
     _LOGGER.debug("gh auth status: %s", result.stdout.decode())
 
 
-
 def create_cruft_branch(git_repo: git.Repo) -> None:
     """Create a branch for the cruft update."""
     _LOGGER.debug("Creating a branch for the cruft update")
@@ -75,7 +73,8 @@ def create_cruft_branch(git_repo: git.Repo) -> None:
             f"Local clone of repository is not tracking cruft-update branch: {git_repo.active_branch.name}"
         )
 
-def apply_updates(git_repo: git.Repo) -> bool:
+
+def apply_updates(git_repo: git.Repo) -> None:
     """Perform cruft updates in the github repository."""
     _LOGGER.debug("Applying changes from cruft")
     working_dir = pathlib.Path(git_repo.working_dir)
@@ -84,11 +83,12 @@ def apply_updates(git_repo: git.Repo) -> bool:
 
 
 def commit_changes(git_repo: git.Repo, comit_message: str) -> None:
-    """Commit changes to the branch.""" 
+    """Commit changes to the branch."""
     git_repo.git.add(update=True)
     git_repo.index.commit(comit_message)
 
-def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> None:
+
+def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> str:
     git_repo.remote().push(refspec=f"{CRUFT_BRANCH}:{CRUFT_BRANCH}")
     _LOGGER.info("Branch '%s' pushed to remote.", CRUFT_BRANCH)
     _LOGGER.info("Creating PR")
@@ -97,8 +97,10 @@ def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> None:
             "gh",
             "pr",
             "create",
-            "--title", PR_TITLE,
-            "--body", PR_BODY,
+            "--title",
+            PR_TITLE,
+            "--body",
+            PR_BODY,
             "--head",
             CRUFT_BRANCH,
             "--base",
@@ -110,8 +112,7 @@ def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> None:
     )
     if result.returncode != 0:
         raise ValueError(
-            "Error when creating PR with `gh pr create`: "
-            + result.stderr.decode()
+            "Error when creating PR with `gh pr create`: " + result.stderr.decode()
         )
     return result.stdout.decode()
 
@@ -165,7 +166,9 @@ class UpdateRepoAction:
 
         for manifest_repo in manifest.repos:
             if "cruft" not in manifest_repo.checks.include:
-                _LOGGER.info("Skipping repo %s; cruft not in include checks.", manifest_repo)
+                _LOGGER.info(
+                    "Skipping repo %s; cruft not in include checks.", manifest_repo
+                )
                 continue
             if repo and manifest_repo.name != repo:
                 continue
@@ -175,14 +178,18 @@ class UpdateRepoAction:
             print(f"Updating repo: {manifest_repo}")
             with repo_working_dir(manifest_repo, worktree) as git_repo:
                 if git_repo.is_dirty() or git_repo.untracked_files:
-                    raise ValueError("Local clone of repository is dirty or has untracked files")
+                    raise ValueError(
+                        "Local clone of repository is dirty or has untracked files"
+                    )
 
                 projects += 1
                 create_cruft_branch(git_repo)
                 apply_updates(git_repo)
                 if not git_repo.is_dirty():
                     already_up_to_date += 1
-                    _LOGGER.info("No changes detected after scruft update; Repo is up to date.")
+                    _LOGGER.info(
+                        "No changes detected after scruft update; Repo is up to date."
+                    )
                     continue
                 updated += 1
 
@@ -194,4 +201,6 @@ class UpdateRepoAction:
                 url = push_and_create_pr(git_repo)
                 print(f"Created pull request: {url}")
 
-        print(f"Updated {updated} of {projects} projects ({already_up_to_date} already up to date).")
+        print(
+            f"Updated {updated} of {projects} projects ({already_up_to_date} already up to date)."
+        )
