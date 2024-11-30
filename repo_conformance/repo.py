@@ -11,6 +11,7 @@ import yaml
 from .list import ListAction
 from .list_repos import ListReposAction
 from .check import CheckAction
+from .update_repo import UpdateRepoAction
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ def main() -> None:
     ListAction.register(subparsers)
     ListReposAction.register(subparsers)
     CheckAction.register(subparsers)
+    UpdateRepoAction.register(subparsers)
 
     args = parser.parse_args()
     if args.log_level:

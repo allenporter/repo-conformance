@@ -42,7 +42,6 @@ class CheckAction:
                 "check", help="Check repositories in the manifest for conformance"
             ),
         )
-        args.add_argument
         args.add_argument(
             "repo",
             help="The name of the repo to check, or all if omitted",
