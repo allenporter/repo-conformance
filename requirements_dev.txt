@@ -17,5 +17,5 @@ pytest-asyncio==0.25.3
 PyGithub==2.6.1
 PyYAML==6.0.2
 types-PyYAML==6.0.12.20241230
-yamllint==1.36.2
+yamllint==1.37.0
 scruft==0.1.1
