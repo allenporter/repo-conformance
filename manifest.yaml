@@ -34,10 +34,6 @@ repos:
   checks:
     include:
     - cruft
-- name: rtsp-to-webrtc-client
-  checks:
-    include:
-    - cruft
 - name: synthetic-home
   checks:
     include:
@@ -68,15 +64,7 @@ repos:
   checks:
     include:
     - cruft
-- name: home-assistant-model-context-protocol
-  checks:
-    include:
-    - cruft
 - name: mcp-server-home-assistant
-  checks:
-    include:
-    - cruft
-- name: hass-openai-custom-conversation
   checks:
     include:
     - cruft
@@ -94,6 +82,9 @@ ignored_repos:
 - name: py-games
 - name: thebends
 - name: wheels-grpc
+- name: home-assistant-model-context-protocol
+- name: hass-openai-custom-conversation
+- name: rtsp-to-webrtc-client
 
 # Tutorial reports
 - name: BeatBox
