@@ -85,6 +85,8 @@ def apply_updates(git_repo: git.Repo) -> None:
 def commit_changes(git_repo: git.Repo, comit_message: str) -> None:
     """Commit changes to the branch."""
     git_repo.git.add(update=True)
+    if git_repo.untracked_files:
+        git_repo.git.add(git_repo.untracked_files)
     git_repo.index.commit(comit_message)
 
 
