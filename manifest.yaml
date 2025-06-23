@@ -76,6 +76,10 @@ repos:
   checks:
     include:
     - cruft
+- name: scruft
+  checks:
+    include:
+    - cruft
 ignored_repos:
 # Older/Archived or not python projects
 - name: arpspyx
