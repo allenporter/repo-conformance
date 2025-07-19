@@ -1,6 +1,37 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77.0"]
+
+[project]
+name = "repo_conformance"
+version = "0.0.1"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+description = "Conformance tests for all of my git repositories."
+readme = "README.md"
+authors = [{ name = "Allen Porter", email = "allen.porter@gmail.com" }]
+requires-python = ">=3.12"
+classifiers = []
+dependencies = [
+  "nest_asyncio>=1.5.6",
+  "GitPython>=3.1.30",
+  "PyYAML>=6.0",
+  "mashumaro>=3.14",
+  "PyGithub>=1.58.0",
+  "json5>=0.9.11",
+]
+
+[project.urls]
+Source = "https://github.com/allenporter/repo_conformance"
+
+[tool.setuptools.packages.find]
+include = ["repo_conformance*"]
+
+[project.entry-points."console_scripts"]
+repo = "repo_conformance.repo:main"
+
 [tool.mypy]
 exclude = [
-  "setup.py",
   "venv/",
 ]
 platform = "linux"
