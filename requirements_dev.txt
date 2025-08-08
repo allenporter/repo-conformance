@@ -14,7 +14,7 @@ json5==0.12.0
 GitPython==3.1.45
 mashumaro==3.16
 pytest-asyncio==1.1.0
-PyGithub==2.6.1
+PyGithub==2.7.0
 PyYAML==6.0.2
 types-PyYAML==6.0.12.20250516
 yamllint==1.37.1
