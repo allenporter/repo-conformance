@@ -38,6 +38,10 @@ repos:
   checks:
     include:
     - cruft
+- name: supernote-lite
+  checks:
+    include:
+    - cruft
 - name: home-assistant-config
 - name: home-assistant-datasets
 - name: home-assistant-journal-assistant
