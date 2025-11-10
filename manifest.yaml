@@ -52,15 +52,7 @@ repos:
   checks:
     include:
     - cruft
-- name: home-assistant-minecraft-profile
-  checks:
-    include:
-    - cruft
 - name: home-assistant-synthetic-home
-  checks:
-    include:
-    - cruft
-- name: home-assistant-summary-agent
   checks:
     include:
     - cruft
