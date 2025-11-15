@@ -56,10 +56,6 @@ repos:
   checks:
     include:
     - cruft
-- name: home-assistant-openid-auth-provider
-  checks:
-    include:
-    - cruft
 - name: home-assistant-rulebook
   checks:
     include:
