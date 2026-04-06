@@ -38,6 +38,22 @@ repos:
   checks:
     include:
     - cruft
+- name: adk-claw
+  checks:
+    include:
+    - cruft
+- name: adk-coder
+  checks:
+    include:
+    - cruft
+- name: home-assistant-google-adk
+  checks:
+    include:
+    - cruft
+- name: supernote
+  checks:
+    include:
+    - cruft
 - name: supernote-lite
   checks:
     include:
