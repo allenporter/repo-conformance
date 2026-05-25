@@ -143,7 +143,6 @@ class UpdateRepoAction:
         args.add_argument(
             "--dry-run",
             help="Run without pushing and sending a PR.",
-            type=str,
             default=False,
             action=BooleanOptionalAction,
         )

@@ -1,4 +1,3 @@
-
 """Conformance tests to for ensuring the repository is up to date."""
 
 import logging
@@ -35,11 +34,9 @@ def cruft(repo: Repo, worktree: pathlib.Path) -> None:
     with cruft_file.open("r") as fd:
         cruft_config = json.load(fd)
 
-    template_url = cruft_config["template"]
+    template_url = cruft_config["template"].rstrip("/")
     repo_full_name = "/".join(template_url.split("/")[-2:])
     commit = cruft_config["commit"]
     latest_commit = get_latest_commit(repo_full_name)
     if commit != latest_commit:
-        raise CheckError(
-            f"Repo is out of date, expected {latest_commit}, got {commit}"
-        )
+        raise CheckError(f"Repo is out of date, expected {latest_commit}, got {commit}")
