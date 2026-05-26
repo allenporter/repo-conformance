@@ -52,3 +52,19 @@ $ repo list_repos
 * name: gcal_sync user: allenporter
 ...
 ```
+
+To update a specific repository to match its cruft template, use the `repo update_repo` command:
+```bash
+$ repo update_repo <repo-name>
+```
+
+To inspect, filter, prioritize, and check the health of open pull requests across all manifest-configured repositories, use the `repo prs` command:
+```bash
+$ repo prs
+```
+
+### Supported `prs` Flags:
+*   `--renovate`: Filter to show only Renovate dependency PRs.
+*   `--cruft`: Filter to show only Cruft template update PRs.
+*   `--author <user>` (e.g., `--author me`): Filter PRs by a specific author.
+*   `--health`: Print an aggregated dashboard showing open/passed/failed/pending counts per repository.
