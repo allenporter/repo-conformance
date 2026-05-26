@@ -36,13 +36,13 @@ class CheckRegistry(Generic[T]):
         """Class method to register a check."""
 
         def wrapper(wrapped_class: Check[T]) -> Check:
-            if wrapped_class.__name__ in self._registry:
+            name = getattr(wrapped_class, "__name__")
+            if name in self._registry:
                 raise ValueError(
-                    "Misconfiguration with duplicate registry entry "
-                    f"'{wrapped_class.__name__}'"
+                    f"Misconfiguration with duplicate registry entry '{name}'"
                 )
-            self._registry[wrapped_class.__name__] = wrapped_class
-            self._default[wrapped_class.__name__] = default
+            self._registry[name] = wrapped_class
+            self._default[name] = default
             return wrapped_class
 
         return wrapper
@@ -51,7 +51,12 @@ class CheckRegistry(Generic[T]):
         """Run checks against the target object."""
         exclude = set(target.checks.exclude)
         include = set(target.checks.include)
-        _LOGGER.debug("Checking %s (exclude_checks=%s, include_checks=%s)", target, exclude, include)
+        _LOGGER.debug(
+            "Checking %s (exclude_checks=%s, include_checks=%s)",
+            target,
+            exclude,
+            include,
+        )
         errors = []
         for name, check in self._registry.items():
             if name in exclude:
