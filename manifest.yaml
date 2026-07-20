@@ -14,10 +14,6 @@ repos:
   checks:
     include:
     - cruft
-- name: flux-local
-  checks:
-    include:
-    - cruft
 - name: python-google-nest-sdm
   checks:
     include:
@@ -59,10 +55,6 @@ repos:
   checks:
     include:
     - cruft
-- name: home-assistant-journal-assistant
-  checks:
-    include:
-    - cruft
 - name: home-assistant-supernote-cloud
   checks:
     include:
@@ -89,6 +81,7 @@ repos:
     - cruft
 ignored_repos:
 # Older/Archived or not python projects
+- name: flux-local
 - name: arpspyx
 - name: gpt3-python-helper
 - name: hass-local-calendar
@@ -102,6 +95,7 @@ ignored_repos:
 - name: thebends
 - name: wheels-grpc
 - name: home-assistant-model-context-protocol
+- name: home-assistant-journal-assistant
 - name: mcp-server-home-assistant
 - name: hass-openai-custom-conversation
 - name: rtsp-to-webrtc-client
