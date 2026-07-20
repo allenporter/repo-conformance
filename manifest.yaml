@@ -26,6 +26,10 @@ repos:
   checks:
     include:
     - cruft
+- name: journal-assistant
+  checks:
+    include:
+    - cruft
 - name: hostdb
   checks:
     include:
@@ -99,7 +103,6 @@ ignored_repos:
 - name: thebends
 - name: wheels-grpc
 - name: home-assistant-model-context-protocol
-- name: journal-assistant
 - name: mcp-server-home-assistant
 - name: hass-openai-custom-conversation
 - name: rtsp-to-webrtc-client
