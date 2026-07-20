@@ -50,10 +50,11 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
     for check in checks:
         status = check.get("status")
         conclusion = check.get("conclusion")
+        state = check.get("state")
 
-        if conclusion == "FAILURE":
+        if conclusion == "FAILURE" or state == "FAILURE" or conclusion == "failed" or state == "failed":
             has_failure = True
-        elif status in ["IN_PROGRESS", "QUEUED"] or not conclusion:
+        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (not conclusion and not state):
             has_pending = True
 
     if has_failure:
@@ -61,17 +62,6 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
     if has_pending:
         return "\033[93m🟡 PENDING\033[0m" if color else "🟡 PENDING"
     return "\033[92m🟢 PASSED\033[0m" if color else "🟢 PASSED"
-
-
-def get_ci_weight(ci_text: str) -> int:
-    """Assign weight for prioritization sorting."""
-    if "FAILED" in ci_text:
-        return 0
-    if "PENDING" in ci_text:
-        return 1
-    if "PASSED" in ci_text:
-        return 2
-    return 3
 
 
 class PrsAction:
@@ -114,6 +104,31 @@ class PrsAction:
             default=False,
             action=BooleanOptionalAction,
         )
+        args.add_argument(
+            "--checks",
+            help="Show detailed CI status checks for open PRs",
+            default=False,
+            action=BooleanOptionalAction,
+        )
+        args.add_argument(
+            "--merge",
+            help="Merge all passing and approved/auto-mergeable PRs",
+            default=False,
+            action=BooleanOptionalAction,
+        )
+        args.add_argument(
+            "-y",
+            "--yes",
+            help="Confirm bulk merge without prompting",
+            default=False,
+            action=BooleanOptionalAction,
+        )
+        args.add_argument(
+            "--dry-run",
+            help="Show PRs that would be merged without merging them",
+            default=False,
+            action=BooleanOptionalAction,
+        )
         args.set_defaults(cls=PrsAction)
         return args
 
@@ -124,6 +139,10 @@ class PrsAction:
         cruft: bool = False,
         author: str | None = None,
         health: bool = False,
+        checks: bool = False,
+        merge: bool = False,
+        yes: bool = False,
+        dry_run: bool = False,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
         """Run implementation."""
@@ -169,7 +188,7 @@ class PrsAction:
                     "--repo",
                     repo_fullname,
                     "--json",
-                    "number,title,url,state,statusCheckRollup,author,createdAt,headRefName",
+                    "number,title,url,state,statusCheckRollup,author,createdAt,headRefName,reviewDecision,mergeable,mergeStateStatus",
                 ],
                 capture_output=True,
                 text=True,
@@ -207,76 +226,173 @@ class PrsAction:
 
                 filtered_prs.append(pr)
 
-            if filtered_prs or health:
-                repos_data.append((r.name, repo_fullname, filtered_prs))
+            if filtered_prs or health or checks or merge:
+                # Group PRs by status
+                grouped = {"ready": [], "pending": [], "attention": []}
+                for pr in filtered_prs:
+                    checks_list = pr.get("statusCheckRollup", [])
+                    ci_str = get_ci_status(checks_list, color=False)
+                    m_state = pr.get("mergeable", "UNKNOWN")
+                    m_status = pr.get("mergeStateStatus", "UNKNOWN")
+                    rev_decision = pr.get("reviewDecision", "")
 
+                    is_failed = "FAILED" in ci_str
+                    is_conflicting = (m_state == "CONFLICTING") or (m_status == "DIRTY")
+                    is_changes_requested = rev_decision == "CHANGES_REQUESTED"
+
+                    is_passed = "PASSED" in ci_str or ci_str == "No checks"
+                    is_mergeable = (m_state == "MERGEABLE") or (m_status in ["CLEAN", "HAS_HOOKS"])
+                    is_approved_or_no_review = rev_decision in ["APPROVED", "", "NONE", None]
+
+                    if is_failed or is_conflicting or is_changes_requested:
+                        grouped["attention"].append(pr)
+                    elif is_passed and is_mergeable and is_approved_or_no_review:
+                        grouped["ready"].append(pr)
+                    else:
+                        grouped["pending"].append(pr)
+
+                repos_data.append((r.name, repo_fullname, grouped))
+
+        # Handle --checks execution
+        if checks:
+            has_prs = False
+            for name, fullname, groups in repos_data:
+                all_prs = groups["ready"] + groups["pending"] + groups["attention"]
+                if not all_prs:
+                    continue
+                has_prs = True
+                for pr in all_prs:
+                    num = pr.get("number")
+                    title = pr.get("title")
+                    print(f"\n\033[1mChecks for {name} #{num}\033[0m: {title}")
+                    print("-" * 60)
+                    res_checks = subprocess.run(
+                        ["gh", "pr", "checks", str(num), "--repo", fullname],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if res_checks.returncode == 0 or res_checks.stdout:
+                        print(res_checks.stdout)
+                    else:
+                        print(res_checks.stderr or "Failed to retrieve check details.")
+            if not has_prs:
+                print("\nNo open pull requests found matching the criteria.\n")
+            return
+
+        # Handle --merge execution
+        if merge:
+            ready_to_merge_all = []
+            for name, fullname, groups in repos_data:
+                ready_to_merge_all.extend([(name, fullname, pr) for pr in groups["ready"]])
+
+            if not ready_to_merge_all:
+                print("\nNo pull requests are ready to merge.\n")
+                return
+
+            print("\nPull requests ready to merge:")
+            for name, fullname, pr in ready_to_merge_all:
+                num = pr.get("number")
+                title = pr.get("title")
+                author_login = pr.get("author", {}).get("login", "unknown")
+                age = format_age(pr.get("createdAt", ""))
+                print(f"  [{name}] #{num:<4} {title} [@{author_login}] ({age})")
+
+            if dry_run:
+                print("\n[Dry-run] Would merge the above pull requests.\n")
+                return
+
+            if not yes:
+                confirm = input(f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: ")
+                if confirm.strip().lower() not in ["y", "yes"]:
+                    print("Merge cancelled.")
+                    return
+
+            print("\nMerging pull requests...")
+            for name, fullname, pr in ready_to_merge_all:
+                num = pr.get("number")
+                print(f"Merging {name} #{num}...")
+                merge_res = subprocess.run(
+                    ["gh", "pr", "merge", str(num), "--repo", fullname, "--squash", "--delete-branch"],
+                    capture_output=True,
+                    text=True,
+                )
+                if merge_res.returncode == 0:
+                    print(f"  \033[92m✓ Successfully merged {name} #{num}\033[0m")
+                else:
+                    print(f"  \033[91m✗ Failed to merge {name} #{num}: {merge_res.stderr.strip()}\033[0m")
+            print()
+            return
+
+        # Handle --health report
         if health:
-            # Print aggregated metrics report
             print(
-                f"\n\033[1m{'Repository':<40} {'Open':<6} {'Passed':<8} {'Failed':<8} {'Pending':<8} {'Oldest':<8}\033[0m"
+                f"\n\033[1m{'Repository':<40} {'Open':<6} {'Ready':<8} {'Pending':<8} {'Attention':<10} {'Oldest':<8}\033[0m"
             )
             print("-" * 86)
-            for name, fullname, prs in repos_data:
-                open_cnt = len(prs)
-                passed_cnt = 0
-                failed_cnt = 0
-                pending_cnt = 0
+            for name, fullname, groups in repos_data:
+                ready_cnt = len(groups["ready"])
+                pending_cnt = len(groups["pending"])
+                attention_cnt = len(groups["attention"])
+                open_cnt = ready_cnt + pending_cnt + attention_cnt
                 oldest_age = "-"
 
                 created_times = []
-                for pr in prs:
-                    checks = pr.get("statusCheckRollup", [])
-                    ci = get_ci_status(checks, color=False)
-                    if "PASSED" in ci:
-                        passed_cnt += 1
-                    elif "FAILED" in ci:
-                        failed_cnt += 1
-                    elif "PENDING" in ci:
-                        pending_cnt += 1
-
+                for pr in groups["ready"] + groups["pending"] + groups["attention"]:
                     created_at = pr.get("createdAt")
                     if created_at:
                         created_times.append(created_at)
 
                 if created_times:
-                    # Find oldest (which is the min date string since ISO strings sort chronologically)
                     oldest_age = format_age(min(created_times))
 
                 print(
-                    f"{name:<40} {open_cnt:<6} {passed_cnt:<8} {failed_cnt:<8} {pending_cnt:<8} {oldest_age:<8}"
+                    f"{name:<40} {open_cnt:<6} {ready_cnt:<8} {pending_cnt:<8} {attention_cnt:<10} {oldest_age:<8}"
                 )
             print()
-        else:
-            # Print standard detailed PR list
-            has_prs = False
-            for name, fullname, prs in repos_data:
-                if not prs:
-                    continue
-                has_prs = True
-                print(f"\n\033[1m{name}\033[0m:")
+            return
 
-                # Sort by CI weight, then by creation date (oldest first)
-                sorted_prs = sorted(
-                    prs,
-                    key=lambda x: (
-                        get_ci_weight(
-                            get_ci_status(x.get("statusCheckRollup", []), color=False)
-                        ),
-                        x.get("createdAt", ""),
-                    ),
-                )
+        # Handle default print view
+        has_prs = False
+        for name, fullname, groups in repos_data:
+            if not (groups["ready"] or groups["pending"] or groups["attention"]):
+                continue
+            has_prs = True
+            print(f"\n\033[1m{name}\033[0m:")
 
-                for pr in sorted_prs:
+            def print_pr_list(prs: list[dict], prefix: str):
+                for pr in prs:
                     num = pr.get("number")
                     title = pr.get("title")
                     author_login = pr.get("author", {}).get("login", "unknown")
-                    checks = pr.get("statusCheckRollup", [])
-                    ci = get_ci_status(checks, color=True)
+                    checks_list = pr.get("statusCheckRollup", [])
+                    ci_str = get_ci_status(checks_list, color=True)
                     age = format_age(pr.get("createdAt", ""))
 
-                    print(f"  #{num:<4} {title} [@{author_login}] ({age}) - {ci}")
+                    m_state = pr.get("mergeable", "UNKNOWN")
+                    m_status = pr.get("mergeStateStatus", "UNKNOWN")
+                    rev_decision = pr.get("reviewDecision", "")
 
-            if not has_prs:
-                print("\nNo open pull requests found matching the criteria.\n")
-            else:
-                print()
+                    details = []
+                    if m_state == "CONFLICTING" or m_status == "DIRTY":
+                        details.append("\033[91mCONFLICT\033[0m")
+                    if rev_decision == "REVIEW_REQUIRED":
+                        details.append("\033[93mNeeds Review\033[0m")
+                    elif rev_decision == "CHANGES_REQUESTED":
+                        details.append("\033[91mChanges Requested\033[0m")
+                    elif rev_decision == "APPROVED":
+                        details.append("\033[92mApproved\033[0m")
+
+                    details_str = f" [{', '.join(details)}]" if details else ""
+                    print(f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}")
+
+            if groups["ready"]:
+                print_pr_list(groups["ready"], "🟢")
+            if groups["pending"]:
+                print_pr_list(groups["pending"], "🟡")
+            if groups["attention"]:
+                print_pr_list(groups["attention"], "🔴")
+
+        if not has_prs:
+            print("\nNo open pull requests found matching the criteria.\n")
+        else:
+            print()
