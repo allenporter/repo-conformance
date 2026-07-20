@@ -52,16 +52,9 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
         conclusion = check.get("conclusion")
         state = check.get("state")
 
-        if (
-            conclusion == "FAILURE"
-            or state == "FAILURE"
-            or conclusion == "failed"
-            or state == "failed"
-        ):
+        if conclusion == "FAILURE" or state == "FAILURE" or conclusion == "failed" or state == "failed":
             has_failure = True
-        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (
-            not conclusion and not state
-        ):
+        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (not conclusion and not state):
             has_pending = True
 
     if has_failure:
@@ -76,10 +69,10 @@ def is_trusted_author(pr: dict, manifest_user: str) -> bool:
     author_login = pr.get("author", {}).get("login", "").lower()
     is_bot = pr.get("author", {}).get("is_bot", False)
     return (
-        author_login == manifest_user.lower()
-        or is_bot
-        or "renovate" in author_login
-        or "dependabot" in author_login
+        author_login == manifest_user.lower() or
+        is_bot or
+        "renovate" in author_login or
+        "dependabot" in author_login
     )
 
 
@@ -108,6 +101,12 @@ class PrsAction:
         args.add_argument(
             "--cruft",
             help="Filter for Cruft update PRs",
+            default=False,
+            action=BooleanOptionalAction,
+        )
+        args.add_argument(
+            "--all",
+            help="Show all open pull requests (including features and community PRs)",
             default=False,
             action=BooleanOptionalAction,
         )
@@ -226,22 +225,25 @@ class PrsAction:
             for pr in prs:
                 pr_author = pr.get("author", {}).get("login", "").lower()
                 pr_title = pr.get("title", "")
+                head_ref = pr.get("headRefName", "")
 
-                # Apply --renovate filter
-                if renovate and "renovate" not in pr_author:
+                is_renovate = "renovate" in pr_author
+                is_dependabot = "dependabot" in pr_author
+                is_cruft = "cruft" in pr_title.lower() or head_ref == "cruft-update"
+                is_maintenance = is_renovate or is_dependabot or is_cruft
+
+                # Apply specific filters if set
+                if renovate and not is_renovate:
                     continue
-
-                # Apply --cruft filter
-                is_cruft = (
-                    "cruft" in pr_title.lower()
-                    or pr.get("headRefName") == "cruft-update"
-                )
                 if cruft and not is_cruft:
                     continue
-
-                # Apply --author filter
                 if target_author and pr_author != target_author:
                     continue
+
+                # Default: only show maintenance PRs unless --all is specified
+                if not (renovate or cruft or target_author or kwargs.get("all")):
+                    if not is_maintenance:
+                        continue
 
                 filtered_prs.append(pr)
 
@@ -261,15 +263,8 @@ class PrsAction:
                     is_changes_requested = rev_decision == "CHANGES_REQUESTED"
 
                     is_passed = "PASSED" in ci_str or ci_str == "No checks"
-                    is_mergeable = (m_state == "MERGEABLE") or (
-                        m_status in ["CLEAN", "HAS_HOOKS"]
-                    )
-                    is_approved_or_no_review = rev_decision in [
-                        "APPROVED",
-                        "",
-                        "NONE",
-                        None,
-                    ]
+                    is_mergeable = (m_state == "MERGEABLE") or (m_status in ["CLEAN", "HAS_HOOKS"])
+                    is_approved_or_no_review = rev_decision in ["APPROVED", "", "NONE", None]
 
                     if is_failed or is_conflicting or is_changes_requested:
                         grouped["attention"].append(pr)
@@ -334,9 +329,7 @@ class PrsAction:
                 return
 
             if not yes:
-                confirm = input(
-                    f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: "
-                )
+                confirm = input(f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: ")
                 if confirm.strip().lower() not in ["y", "yes"]:
                     print("Merge cancelled.")
                     return
@@ -346,25 +339,14 @@ class PrsAction:
                 num = pr.get("number")
                 print(f"Merging {name} #{num}...")
                 merge_res = subprocess.run(
-                    [
-                        "gh",
-                        "pr",
-                        "merge",
-                        str(num),
-                        "--repo",
-                        fullname,
-                        "--squash",
-                        "--delete-branch",
-                    ],
+                    ["gh", "pr", "merge", str(num), "--repo", fullname, "--squash", "--delete-branch"],
                     capture_output=True,
                     text=True,
                 )
                 if merge_res.returncode == 0:
                     print(f"  \033[92m✓ Successfully merged {name} #{num}\033[0m")
                 else:
-                    print(
-                        f"  \033[91m✗ Failed to merge {name} #{num}: {merge_res.stderr.strip()}\033[0m"
-                    )
+                    print(f"  \033[91m✗ Failed to merge {name} #{num}: {merge_res.stderr.strip()}\033[0m")
             print()
             return
 
@@ -431,9 +413,7 @@ class PrsAction:
                         details.append("\033[92mApproved\033[0m")
 
                     details_str = f" [{', '.join(details)}]" if details else ""
-                    print(
-                        f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}"
-                    )
+                    print(f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}")
 
             if groups["ready"]:
                 print_pr_list(groups["ready"], "🟢")
