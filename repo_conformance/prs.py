@@ -257,16 +257,36 @@ class PrsAction:
                     m_status = pr.get("mergeStateStatus", "UNKNOWN")
                     rev_decision = pr.get("reviewDecision", "")
                     is_draft = pr.get("isDraft", False)
+                    
+                    head_ref = pr.get("headRefName", "")
+                    pr_title = pr.get("title", "")
+                    is_cruft = "cruft" in pr_title.lower() or head_ref == "cruft-update"
 
                     is_failed = "FAILED" in ci_str
                     is_conflicting = (m_state == "CONFLICTING") or (m_status == "DIRTY")
                     is_changes_requested = rev_decision == "CHANGES_REQUESTED"
+                    
+                    # Fetch file list for cruft PRs to check for .rej files
+                    has_rej_files = False
+                    if is_cruft:
+                        files_res = subprocess.run(
+                            ["gh", "pr", "diff", str(pr.get("number")), "--repo", repo_fullname, "--name-only"],
+                            capture_output=True,
+                            text=True
+                        )
+                        if files_res.returncode == 0:
+                            modified_files = files_res.stdout.splitlines()
+                            if any(f.endswith(".rej") for f in modified_files):
+                                has_rej_files = True
+                    
+                    # Store has_rej_files in the PR dict
+                    pr["has_rej_files"] = has_rej_files
 
                     is_passed = "PASSED" in ci_str or ci_str == "No checks"
                     is_mergeable = (m_state == "MERGEABLE") or (m_status in ["CLEAN", "HAS_HOOKS"])
                     is_approved_or_no_review = rev_decision in ["APPROVED", "", "NONE", None]
 
-                    if is_failed or is_conflicting or is_changes_requested:
+                    if is_failed or is_conflicting or is_changes_requested or has_rej_files:
                         grouped["attention"].append(pr)
                     elif is_draft:
                         grouped["pending"].append(pr)
@@ -399,12 +419,15 @@ class PrsAction:
                     m_status = pr.get("mergeStateStatus", "UNKNOWN")
                     rev_decision = pr.get("reviewDecision", "")
                     is_draft = pr.get("isDraft", False)
+                    has_rej_files = pr.get("has_rej_files", False)
 
                     details = []
                     if is_draft:
                         details.append("\033[93mDraft\033[0m")
                     if m_state == "CONFLICTING" or m_status == "DIRTY":
                         details.append("\033[91mCONFLICT\033[0m")
+                    if has_rej_files:
+                        details.append("\033[91mREJECT FILES\033[0m")
                     if rev_decision == "REVIEW_REQUIRED":
                         details.append("\033[93mNeeds Review\033[0m")
                     elif rev_decision == "CHANGES_REQUESTED":
