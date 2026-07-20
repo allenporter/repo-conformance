@@ -88,37 +88,51 @@ repos:
     include:
     - cruft
 ignored_repos:
-# Older/Archived or not python projects
-- name: flux-local
-- name: arpspyx
-- name: gpt3-python-helper
-- name: hass-local-calendar
-- name: iphonedisk
-- name: machsniff
-- name: mobilesynth
-- name: mobileterminal
-- name: mug
-- name: open-tracker
-- name: py-games
-- name: thebends
-- name: wheels-grpc
-- name: home-assistant-model-context-protocol
-- name: mcp-server-home-assistant
-- name: hass-openai-custom-conversation
-- name: rtsp-to-webrtc-client
+# Cookiecutter Project Templates
 - name: cookiecutter-python
 - name: cookiecutter-home-assistant-custom-component
+
+# Model Context Protocol (MCP) & AI/LLM Tools
+- name: home-assistant-model-context-protocol
+- name: mcp-server-home-assistant
+- name: gpt3-python-helper
 - name: supernote-llm
+- name: functionary-server
+
+# Home Assistant Integrations & Helper Utilities (Ignored/Inactive)
+- name: hass-local-calendar
+- name: hass-openai-custom-conversation
 - name: home-assistant-openid-auth-provider
+- name: rtsp-to-webrtc-client
+- name: mug
+
+# Kubernetes, GitOps, and Flux Tools
+- name: flux-local
+- name: renovate-helm-releases
+- name: wheels-grpc
+
+# Fitbit API Clients
 - name: fitbit-web-api
 - name: fitbit-web-api-fork
-- name: renovate-helm-releases
+
+# Web Components & Frontend Tools
 - name: recurrence-rule-editor
+
+# Tutorials, Development Playgrounds & Devcontainers
 - name: karpathy-guides
 - name: esphome-projects
 - name: devcontainer-cuda
 - name: devpod-workspaces
-- name: functionary-server
+
+# Legacy / Archived iOS & Networking Tools
+- name: iphonedisk
+- name: mobilesynth
+- name: mobileterminal
+- name: arpspyx
+- name: machsniff
+- name: open-tracker
+- name: py-games
+- name: thebends
 
 # Tutorial reports
 - name: BeatBox
