@@ -22,6 +22,10 @@ repos:
   checks:
     include:
     - cruft
+- name: python-google-health-api
+  checks:
+    include:
+    - cruft
 - name: hostdb
   checks:
     include:
@@ -95,10 +99,23 @@ ignored_repos:
 - name: thebends
 - name: wheels-grpc
 - name: home-assistant-model-context-protocol
-- name: home-assistant-journal-assistant
+- name: journal-assistant
 - name: mcp-server-home-assistant
 - name: hass-openai-custom-conversation
 - name: rtsp-to-webrtc-client
+- name: cookiecutter-python
+- name: cookiecutter-home-assistant-custom-component
+- name: supernote-llm
+- name: home-assistant-openid-auth-provider
+- name: fitbit-web-api
+- name: fitbit-web-api-fork
+- name: renovate-helm-releases
+- name: recurrence-rule-editor
+- name: karpathy-guides
+- name: esphome-projects
+- name: devcontainer-cuda
+- name: devpod-workspaces
+- name: functionary-server
 
 # Tutorial reports
 - name: BeatBox
