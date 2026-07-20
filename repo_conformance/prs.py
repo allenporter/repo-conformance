@@ -52,9 +52,16 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
         conclusion = check.get("conclusion")
         state = check.get("state")
 
-        if conclusion == "FAILURE" or state == "FAILURE" or conclusion == "failed" or state == "failed":
+        if (
+            conclusion == "FAILURE"
+            or state == "FAILURE"
+            or conclusion == "failed"
+            or state == "failed"
+        ):
             has_failure = True
-        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (not conclusion and not state):
+        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (
+            not conclusion and not state
+        ):
             has_pending = True
 
     if has_failure:
@@ -62,6 +69,18 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
     if has_pending:
         return "\033[93m🟡 PENDING\033[0m" if color else "🟡 PENDING"
     return "\033[92m🟢 PASSED\033[0m" if color else "🟢 PASSED"
+
+
+def is_trusted_author(pr: dict, manifest_user: str) -> bool:
+    """Check if the PR is authored by a trusted entity (self or a bot)."""
+    author_login = pr.get("author", {}).get("login", "").lower()
+    is_bot = pr.get("author", {}).get("is_bot", False)
+    return (
+        author_login == manifest_user.lower()
+        or is_bot
+        or "renovate" in author_login
+        or "dependabot" in author_login
+    )
 
 
 class PrsAction:
@@ -188,7 +207,7 @@ class PrsAction:
                     "--repo",
                     repo_fullname,
                     "--json",
-                    "number,title,url,state,statusCheckRollup,author,createdAt,headRefName,reviewDecision,mergeable,mergeStateStatus",
+                    "number,title,url,state,statusCheckRollup,author,createdAt,headRefName,reviewDecision,mergeable,mergeStateStatus,isDraft",
                 ],
                 capture_output=True,
                 text=True,
@@ -235,17 +254,27 @@ class PrsAction:
                     m_state = pr.get("mergeable", "UNKNOWN")
                     m_status = pr.get("mergeStateStatus", "UNKNOWN")
                     rev_decision = pr.get("reviewDecision", "")
+                    is_draft = pr.get("isDraft", False)
 
                     is_failed = "FAILED" in ci_str
                     is_conflicting = (m_state == "CONFLICTING") or (m_status == "DIRTY")
                     is_changes_requested = rev_decision == "CHANGES_REQUESTED"
 
                     is_passed = "PASSED" in ci_str or ci_str == "No checks"
-                    is_mergeable = (m_state == "MERGEABLE") or (m_status in ["CLEAN", "HAS_HOOKS"])
-                    is_approved_or_no_review = rev_decision in ["APPROVED", "", "NONE", None]
+                    is_mergeable = (m_state == "MERGEABLE") or (
+                        m_status in ["CLEAN", "HAS_HOOKS"]
+                    )
+                    is_approved_or_no_review = rev_decision in [
+                        "APPROVED",
+                        "",
+                        "NONE",
+                        None,
+                    ]
 
                     if is_failed or is_conflicting or is_changes_requested:
                         grouped["attention"].append(pr)
+                    elif is_draft:
+                        grouped["pending"].append(pr)
                     elif is_passed and is_mergeable and is_approved_or_no_review:
                         grouped["ready"].append(pr)
                     else:
@@ -283,7 +312,10 @@ class PrsAction:
         if merge:
             ready_to_merge_all = []
             for name, fullname, groups in repos_data:
-                ready_to_merge_all.extend([(name, fullname, pr) for pr in groups["ready"]])
+                for pr in groups["ready"]:
+                    # Safety check: enforce trusted author constraint
+                    if is_trusted_author(pr, manifest.user):
+                        ready_to_merge_all.append((name, fullname, pr))
 
             if not ready_to_merge_all:
                 print("\nNo pull requests are ready to merge.\n")
@@ -302,7 +334,9 @@ class PrsAction:
                 return
 
             if not yes:
-                confirm = input(f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: ")
+                confirm = input(
+                    f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: "
+                )
                 if confirm.strip().lower() not in ["y", "yes"]:
                     print("Merge cancelled.")
                     return
@@ -312,14 +346,25 @@ class PrsAction:
                 num = pr.get("number")
                 print(f"Merging {name} #{num}...")
                 merge_res = subprocess.run(
-                    ["gh", "pr", "merge", str(num), "--repo", fullname, "--squash", "--delete-branch"],
+                    [
+                        "gh",
+                        "pr",
+                        "merge",
+                        str(num),
+                        "--repo",
+                        fullname,
+                        "--squash",
+                        "--delete-branch",
+                    ],
                     capture_output=True,
                     text=True,
                 )
                 if merge_res.returncode == 0:
                     print(f"  \033[92m✓ Successfully merged {name} #{num}\033[0m")
                 else:
-                    print(f"  \033[91m✗ Failed to merge {name} #{num}: {merge_res.stderr.strip()}\033[0m")
+                    print(
+                        f"  \033[91m✗ Failed to merge {name} #{num}: {merge_res.stderr.strip()}\033[0m"
+                    )
             print()
             return
 
@@ -371,8 +416,11 @@ class PrsAction:
                     m_state = pr.get("mergeable", "UNKNOWN")
                     m_status = pr.get("mergeStateStatus", "UNKNOWN")
                     rev_decision = pr.get("reviewDecision", "")
+                    is_draft = pr.get("isDraft", False)
 
                     details = []
+                    if is_draft:
+                        details.append("\033[93mDraft\033[0m")
                     if m_state == "CONFLICTING" or m_status == "DIRTY":
                         details.append("\033[91mCONFLICT\033[0m")
                     if rev_decision == "REVIEW_REQUIRED":
@@ -383,7 +431,9 @@ class PrsAction:
                         details.append("\033[92mApproved\033[0m")
 
                     details_str = f" [{', '.join(details)}]" if details else ""
-                    print(f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}")
+                    print(
+                        f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}"
+                    )
 
             if groups["ready"]:
                 print_pr_list(groups["ready"], "🟢")
