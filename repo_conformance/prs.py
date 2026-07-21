@@ -232,10 +232,18 @@ class PrsAction:
                 is_cruft = "cruft" in pr_title.lower() or head_ref == "cruft-update"
                 is_maintenance = is_renovate or is_dependabot or is_cruft
 
-                # Apply specific filters if set
-                if renovate and not is_renovate:
-                    continue
-                if cruft and not is_cruft:
+                # Apply --cruft filter with strict verification rules
+                is_cruft_branch = (pr.get("headRefName") == "cruft-update")
+                is_cruft_title = (pr_title == "Apply cruft updates")
+                is_self_authored = (pr_author == manifest.user.lower())
+                
+                # Check for forks (headRepository must match baseRepository if present)
+                head_repo_owner = pr.get("headRepository", {}).get("owner", {}).get("login", "").lower()
+                is_internal_branch = not head_repo_owner or head_repo_owner == manifest.user.lower()
+
+                is_valid_cruft_pr = is_cruft_branch and is_cruft_title and is_self_authored and is_internal_branch
+
+                if cruft and not is_valid_cruft_pr:
                     continue
                 if target_author and pr_author != target_author:
                     continue
