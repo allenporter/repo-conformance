@@ -6,6 +6,10 @@ repos:
   checks:
     include:
     - cruft
+- name: icaldav
+  checks:
+    include:
+    - cruft
 - name: pyrainbird
   checks:
     include:
