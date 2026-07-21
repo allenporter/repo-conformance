@@ -325,6 +325,14 @@ class PrsAction:
 
         # Handle --merge execution
         if merge:
+            if not (renovate or cruft):
+                print(
+                    "\033[91mError: Naked --merge without a category filter is disabled for safety.\033[0m\n"
+                    "Please specify an explicit category filter (e.g. `repo prs --cruft --merge` or `repo prs --renovate --merge`).",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
             ready_to_merge_all = []
             for name, fullname, groups in repos_data:
                 for pr in groups["ready"]:
