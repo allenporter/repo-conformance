@@ -1,16 +1,16 @@
 """Action to inspect and manage open pull requests in manifest repositories."""
 
-import subprocess
 import json
 import logging
+import re
+import subprocess
 import sys
-from datetime import datetime, timezone
 from argparse import ArgumentParser, BooleanOptionalAction
 from argparse import _SubParsersAction as SubParsersAction
+from datetime import UTC, datetime
 from typing import cast
 
 from .manifest import parse_manifest
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def format_age(dt_str: str) -> str:
     """Format the duration since the given ISO datetime string."""
     try:
         created = parse_iso_datetime(dt_str)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         diff = now - created
         if diff.days > 0:
             return f"{diff.days}d"
@@ -35,7 +35,7 @@ def format_age(dt_str: str) -> str:
             return f"{hours}h"
         minutes = (diff.seconds % 3600) // 60
         return f"{minutes}m"
-    except Exception:
+    except (ValueError, TypeError):
         return "unknown"
 
 
@@ -52,9 +52,16 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
         conclusion = check.get("conclusion")
         state = check.get("state")
 
-        if conclusion == "FAILURE" or state == "FAILURE" or conclusion == "failed" or state == "failed":
+        if (
+            conclusion == "FAILURE"
+            or state == "FAILURE"
+            or conclusion == "failed"
+            or state == "failed"
+        ):
             has_failure = True
-        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (not conclusion and not state):
+        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (
+            not conclusion and not state
+        ):
             has_pending = True
 
     if has_failure:
@@ -69,11 +76,117 @@ def is_trusted_author(pr: dict, manifest_user: str) -> bool:
     author_login = pr.get("author", {}).get("login", "").lower()
     is_bot = pr.get("author", {}).get("is_bot", False)
     return (
-        author_login == manifest_user.lower() or
-        is_bot or
-        "renovate" in author_login or
-        "dependabot" in author_login
+        author_login == manifest_user.lower()
+        or is_bot
+        or "renovate" in author_login
+        or "dependabot" in author_login
     )
+
+
+def is_major_version_bump(title: str, body: str = "") -> bool:
+    """Determine if a PR represents a major version bump."""
+    text = f"{title}\n{body}"
+
+    if re.search(r"\bmajor\b", title, re.IGNORECASE):
+        return True
+
+    match = re.search(
+        r"(?:from|bump[s]?\s+\S+\s+from)\s+v?(\d+)\.\S+\s+to\s+v?(\d+)\.\S+",
+        text,
+        re.IGNORECASE,
+    )
+    if match:
+        from_major, to_major = match.group(1), match.group(2)
+        return from_major != to_major
+
+    to_v_match = re.search(r"\bto\s+v?(\d+)(?!\.\d+)\b", title, re.IGNORECASE)
+    return bool(to_v_match)
+
+
+def is_security_update(title: str, body: str = "") -> bool:
+    """Determine if a PR is a security patch or CVE fix."""
+    text = f"{title}\n{body}".lower()
+    return any(kw in text for kw in ["security", "cve-", "vulnerability", "advisory"])
+
+
+class GitHubClient:
+    """Interface for GitHub CLI operations."""
+
+    def check_auth(self) -> bool:
+        res = subprocess.run(
+            ["gh", "auth", "status"],
+            check=False,
+            capture_output=True,
+        )
+        return res.returncode == 0
+
+    def list_prs(self, repo_fullname: str) -> list[dict]:
+        res = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                repo_fullname,
+                "--json",
+                "number,title,url,state,statusCheckRollup,author,createdAt,headRefName,reviewDecision,mergeable,mergeStateStatus,isDraft,body",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if res.returncode != 0:
+            return []
+        try:
+            return json.loads(res.stdout)
+        except json.JSONDecodeError:
+            return []
+
+    def get_pr_diff_files(self, repo_fullname: str, pr_number: int) -> list[str]:
+        res = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "diff",
+                str(pr_number),
+                "--repo",
+                repo_fullname,
+                "--name-only",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if res.returncode == 0:
+            return res.stdout.splitlines()
+        return []
+
+    def get_pr_checks(self, repo_fullname: str, pr_number: int) -> str:
+        res = subprocess.run(
+            ["gh", "pr", "checks", str(pr_number), "--repo", repo_fullname],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        return res.stdout if res.returncode == 0 else (res.stderr or "")
+
+    def merge_pr(self, repo_fullname: str, pr_number: int) -> tuple[bool, str]:
+        res = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "merge",
+                str(pr_number),
+                "--repo",
+                repo_fullname,
+                "--squash",
+                "--delete-branch",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        return res.returncode == 0, res.stderr.strip()
 
 
 class PrsAction:
@@ -135,6 +248,12 @@ class PrsAction:
             action=BooleanOptionalAction,
         )
         args.add_argument(
+            "--allow-major",
+            help="Allow auto-merging major version upgrades",
+            default=False,
+            action=BooleanOptionalAction,
+        )
+        args.add_argument(
             "-y",
             "--yes",
             help="Confirm bulk merge without prompting",
@@ -159,22 +278,18 @@ class PrsAction:
         health: bool = False,
         checks: bool = False,
         merge: bool = False,
+        allow_major: bool = False,
         yes: bool = False,
         dry_run: bool = False,
+        client: GitHubClient | None = None,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
         """Run implementation."""
         manifest = parse_manifest()
+        github_client = client or GitHubClient()
 
         # Verify the user is logged into the gh CLI
-        try:
-            subprocess.run(
-                ["gh", "auth", "status"],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        except Exception:
+        if not github_client.check_auth():
             print(
                 "Error: Please log in using the GitHub CLI with `gh auth login`.",
                 file=sys.stderr,
@@ -198,27 +313,8 @@ class PrsAction:
 
             repo_fullname = f"{r.user}/{r.name}"
 
-            res = subprocess.run(
-                [
-                    "gh",
-                    "pr",
-                    "list",
-                    "--repo",
-                    repo_fullname,
-                    "--json",
-                    "number,title,url,state,statusCheckRollup,author,createdAt,headRefName,reviewDecision,mergeable,mergeStateStatus,isDraft",
-                ],
-                capture_output=True,
-                text=True,
-            )
-
-            if res.returncode != 0:
-                _LOGGER.debug("Skipping %s: %s", repo_fullname, res.stderr.strip())
-                continue
-
-            try:
-                prs = json.loads(res.stdout)
-            except json.JSONDecodeError:
+            prs = github_client.list_prs(repo_fullname)
+            if not prs:
                 continue
 
             filtered_prs = []
@@ -233,25 +329,41 @@ class PrsAction:
                 is_maintenance = is_renovate or is_dependabot or is_cruft
 
                 # Apply --cruft filter with strict verification rules
-                is_cruft_branch = (pr.get("headRefName") == "cruft-update")
-                is_cruft_title = (pr_title == "Apply cruft updates")
-                is_self_authored = (pr_author == manifest.user.lower())
-                
+                is_cruft_branch = pr.get("headRefName") == "cruft-update"
+                is_cruft_title = pr_title == "Apply cruft updates"
+                is_self_authored = pr_author == manifest.user.lower()
+
                 # Check for forks (headRepository must match baseRepository if present)
-                head_repo_owner = pr.get("headRepository", {}).get("owner", {}).get("login", "").lower()
-                is_internal_branch = not head_repo_owner or head_repo_owner == manifest.user.lower()
+                head_repo_owner = (
+                    pr.get("headRepository", {})
+                    .get("owner", {})
+                    .get("login", "")
+                    .lower()
+                )
+                is_internal_branch = (
+                    not head_repo_owner or head_repo_owner == manifest.user.lower()
+                )
 
-                is_valid_cruft_pr = is_cruft_branch and is_cruft_title and is_self_authored and is_internal_branch
+                is_valid_cruft_pr = (
+                    is_cruft_branch
+                    and is_cruft_title
+                    and is_self_authored
+                    and is_internal_branch
+                )
 
+                if renovate and not (is_renovate or is_dependabot):
+                    continue
                 if cruft and not is_valid_cruft_pr:
                     continue
                 if target_author and pr_author != target_author:
                     continue
 
                 # Default: only show maintenance PRs unless --all is specified
-                if not (renovate or cruft or target_author or kwargs.get("all")):
-                    if not is_maintenance:
-                        continue
+                if (
+                    not (renovate or cruft or target_author or kwargs.get("all"))
+                    and not is_maintenance
+                ):
+                    continue
 
                 filtered_prs.append(pr)
 
@@ -265,38 +377,52 @@ class PrsAction:
                     m_status = pr.get("mergeStateStatus", "UNKNOWN")
                     rev_decision = pr.get("reviewDecision", "")
                     is_draft = pr.get("isDraft", False)
-                    
+
                     head_ref = pr.get("headRefName", "")
                     pr_title = pr.get("title", "")
+                    pr_body = pr.get("body", "") or ""
                     is_cruft = "cruft" in pr_title.lower() or head_ref == "cruft-update"
+
+                    is_major = is_major_version_bump(pr_title, pr_body)
+                    is_security = is_security_update(pr_title, pr_body)
+                    pr["is_major"] = is_major
+                    pr["is_security"] = is_security
 
                     is_failed = "FAILED" in ci_str
                     is_conflicting = (m_state == "CONFLICTING") or (m_status == "DIRTY")
                     is_changes_requested = rev_decision == "CHANGES_REQUESTED"
-                    
+
                     # Fetch file list for cruft PRs to check for .rej files
                     has_rej_files = False
-                    if is_cruft:
-                        files_res = subprocess.run(
-                            ["gh", "pr", "diff", str(pr.get("number")), "--repo", repo_fullname, "--name-only"],
-                            capture_output=True,
-                            text=True
+                    if is_cruft and "number" in pr:
+                        modified_files = github_client.get_pr_diff_files(
+                            repo_fullname, int(pr["number"])
                         )
-                        if files_res.returncode == 0:
-                            modified_files = files_res.stdout.splitlines()
-                            if any(f.endswith(".rej") for f in modified_files):
-                                has_rej_files = True
-                    
+                        if any(f.endswith(".rej") for f in modified_files):
+                            has_rej_files = True
+
                     # Store has_rej_files in the PR dict
                     pr["has_rej_files"] = has_rej_files
 
                     is_passed = "PASSED" in ci_str or ci_str == "No checks"
-                    is_mergeable = (m_state == "MERGEABLE") or (m_status in ["CLEAN", "HAS_HOOKS"])
-                    is_approved_or_no_review = rev_decision in ["APPROVED", "", "NONE", None]
+                    is_mergeable = (m_state == "MERGEABLE") or (
+                        m_status in ["CLEAN", "HAS_HOOKS"]
+                    )
+                    is_approved_or_no_review = rev_decision in [
+                        "APPROVED",
+                        "",
+                        "NONE",
+                        None,
+                    ]
 
-                    if is_failed or is_conflicting or is_changes_requested or has_rej_files:
+                    if (
+                        is_failed
+                        or is_conflicting
+                        or is_changes_requested
+                        or has_rej_files
+                    ):
                         grouped["attention"].append(pr)
-                    elif is_draft:
+                    elif is_draft or (is_major and not allow_major):
                         grouped["pending"].append(pr)
                     elif is_passed and is_mergeable and is_approved_or_no_review:
                         grouped["ready"].append(pr)
@@ -318,15 +444,8 @@ class PrsAction:
                     title = pr.get("title")
                     print(f"\n\033[1mChecks for {name} #{num}\033[0m: {title}")
                     print("-" * 60)
-                    res_checks = subprocess.run(
-                        ["gh", "pr", "checks", str(num), "--repo", fullname],
-                        capture_output=True,
-                        text=True,
-                    )
-                    if res_checks.returncode == 0 or res_checks.stdout:
-                        print(res_checks.stdout)
-                    else:
-                        print(res_checks.stderr or "Failed to retrieve check details.")
+                    checks_out = github_client.get_pr_checks(fullname, num)
+                    print(checks_out or "Failed to retrieve check details.")
             if not has_prs:
                 print("\nNo open pull requests found matching the criteria.\n")
             return
@@ -344,9 +463,27 @@ class PrsAction:
             ready_to_merge_all = []
             for name, fullname, groups in repos_data:
                 for pr in groups["ready"]:
-                    # Safety check: enforce trusted author constraint
-                    if is_trusted_author(pr, manifest.user):
-                        ready_to_merge_all.append((name, fullname, pr))
+                    pr_author = pr.get("author", {}).get("login", "").lower()
+                    is_bot = pr.get("author", {}).get("is_bot", False)
+
+                    if renovate:
+                        # Strictly target Renovate or Dependabot PRs only
+                        if not (
+                            "renovate" in pr_author
+                            or "dependabot" in pr_author
+                            or is_bot
+                        ):
+                            continue
+                    elif cruft:
+                        head_ref = pr.get("headRefName", "")
+                        pr_title = pr.get("title", "")
+                        is_cruft = (
+                            "cruft" in pr_title.lower() or head_ref == "cruft-update"
+                        )
+                        if not is_cruft:
+                            continue
+
+                    ready_to_merge_all.append((name, fullname, pr))
 
             if not ready_to_merge_all:
                 print("\nNo pull requests are ready to merge.\n")
@@ -365,7 +502,9 @@ class PrsAction:
                 return
 
             if not yes:
-                confirm = input(f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: ")
+                confirm = input(
+                    f"\nProceed with merging these {len(ready_to_merge_all)} pull requests? [y/N]: "
+                )
                 if confirm.strip().lower() not in ["y", "yes"]:
                     print("Merge cancelled.")
                     return
@@ -374,15 +513,13 @@ class PrsAction:
             for name, fullname, pr in ready_to_merge_all:
                 num = pr.get("number")
                 print(f"Merging {name} #{num}...")
-                merge_res = subprocess.run(
-                    ["gh", "pr", "merge", str(num), "--repo", fullname, "--squash", "--delete-branch"],
-                    capture_output=True,
-                    text=True,
-                )
-                if merge_res.returncode == 0:
+                success, err_msg = github_client.merge_pr(fullname, num)
+                if success:
                     print(f"  \033[92m✓ Successfully merged {name} #{num}\033[0m")
                 else:
-                    print(f"  \033[91m✗ Failed to merge {name} #{num}: {merge_res.stderr.strip()}\033[0m")
+                    print(
+                        f"  \033[91m✗ Failed to merge {name} #{num}: {err_msg}\033[0m"
+                    )
             print()
             return
 
@@ -436,10 +573,16 @@ class PrsAction:
                     rev_decision = pr.get("reviewDecision", "")
                     is_draft = pr.get("isDraft", False)
                     has_rej_files = pr.get("has_rej_files", False)
+                    is_major = pr.get("is_major", False)
+                    is_security = pr.get("is_security", False)
 
                     details = []
                     if is_draft:
                         details.append("\033[93mDraft\033[0m")
+                    if is_major:
+                        details.append("\033[93mMAJOR UPGRADE\033[0m")
+                    if is_security:
+                        details.append("\033[92mSECURITY\033[0m")
                     if m_state == "CONFLICTING" or m_status == "DIRTY":
                         details.append("\033[91mCONFLICT\033[0m")
                     if has_rej_files:
@@ -452,7 +595,9 @@ class PrsAction:
                         details.append("\033[92mApproved\033[0m")
 
                     details_str = f" [{', '.join(details)}]" if details else ""
-                    print(f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}")
+                    print(
+                        f"  {prefix} #{num:<4} {title} [@{author_login}] ({age}) - {ci_str}{details_str}"
+                    )
 
             if groups["ready"]:
                 print_pr_list(groups["ready"], "🟢")
