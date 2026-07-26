@@ -39,11 +39,19 @@ uv run repo prs --renovate --merge --yes
 
 ---
 
-### Step 3: Spawn Parallel Subagents in Isolated Worktrees (`Workspace: "branch"`)
-For any repository marked `🔴 Attention Required` or needing template updates:
+### Step 3: Spawn Parallel Subagents in Batches (`Workspace: "branch"`)
 
-1. Use `invoke_subagent` with `Workspace: "branch"` to create an isolated git worktree.
-2. Pass the **`cruft_resolution`** skill to each subagent.
+> [!IMPORTANT]
+> **Strict Concurrency Guard (`MAX_CONCURRENT_SUBAGENTS = 3`)**:
+> To prevent context overload and CPU exhaustion, **NEVER spawn more than 3 subagents simultaneously**. Process target repositories in prioritized batches of 1 to 3 repos.
+
+1. **Batch Prioritization**:
+   * **Priority 1**: Repositories with active CI failures (`🔴 Attention Required`).
+   * **Priority 2**: Repositories with pending template updates (`scruft check`).
+2. **Sequential Batch Execution**:
+   * Launch `invoke_subagent` for **Batch 1 (maximum 3 repos)** using `Workspace: "branch"`.
+   * Wait for Batch 1 subagents to complete and report results before launching Batch 2.
+3. Pass the **`cruft_resolution`** skill to each subagent in the active batch.
 3. **Subagent Execution Protocol**:
    * Run `scruft update` or resolve git patch conflicts in the isolated worktree.
    * **Execute the 5 Verification Oracles locally**:
