@@ -9,7 +9,6 @@ from repo_conformance.manifest import Repo
 
 from .registries import WORKTREE_CHECKS
 
-
 _LOGGER = logging.getLogger(__name__)
 
 REQUIRES = [">=3.10", ">=3.11"]
@@ -58,7 +57,7 @@ def python_version(repo: Repo, worktree: pathlib.Path) -> None:
         )
 
     files = [worktree / file for file in TEST_FILES]
-    if not any([file.exists() for file in files]):
+    if not any(file.exists() for file in files):
         raise CheckError(f"Repo has no {TEST_FILES}")
 
     content = "".join([file.read_text() for file in files if file.exists()])
