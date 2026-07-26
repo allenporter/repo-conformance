@@ -1,7 +1,7 @@
 """Conformance tests to for ensuring the repository is up to date."""
 
-import logging
 import json
+import logging
 import pathlib
 from functools import cache
 

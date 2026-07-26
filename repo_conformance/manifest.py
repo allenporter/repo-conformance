@@ -4,12 +4,11 @@ import pathlib
 from dataclasses import dataclass, field
 from typing import Any
 
-from mashumaro.codecs.yaml import yaml_decode
-from mashumaro import DataClassDictMixin
 import yaml
+from mashumaro import DataClassDictMixin
+from mashumaro.codecs.yaml import yaml_decode
 
 from .exceptions import ManifestError
-
 
 MANIFEST = pathlib.Path("manifest.yaml")
 

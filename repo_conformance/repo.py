@@ -8,12 +8,11 @@ from typing import Any
 
 import yaml
 
+from .check import CheckAction
 from .list import ListAction
 from .list_repos import ListReposAction
-from .check import CheckAction
-from .update_repo import UpdateRepoAction
 from .prs import PrsAction
-
+from .update_repo import UpdateRepoAction
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ def main() -> None:
     action = args.cls()
     try:
         action.run(**vars(args))
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001
         if args.log_level == "DEBUG":
             traceback.print_exc()
         print("repo error: ", err)

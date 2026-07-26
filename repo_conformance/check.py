@@ -1,17 +1,16 @@
 """Action to check repositories for conformance."""
 
+import logging
+import pathlib
+import re
+import sys
 from argparse import ArgumentParser
 from argparse import _SubParsersAction as SubParsersAction
-import logging
-import re
-import pathlib
-import sys
 from typing import cast
 
-from .manifest import parse_manifest
-from .exceptions import Failure
 from .checks.registries import REPO_CHECKS
-
+from .exceptions import Failure
+from .manifest import parse_manifest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ def print_errors(errors: list[Failure]) -> None:
             buf += f"{name}:"
             indent += 2
         print(f"{buf} {error.detail}")
-        print("")
+        print()
 
 
 class CheckAction:

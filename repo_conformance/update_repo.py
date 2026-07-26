@@ -1,19 +1,19 @@
 """Action to update a github repos using scruft."""
 
+import logging
 import pathlib
 import tempfile
-import logging
-from contextlib import contextmanager
 from argparse import ArgumentParser, BooleanOptionalAction
-from collections.abc import Generator
 from argparse import _SubParsersAction as SubParsersAction
+from collections.abc import Generator
+from contextlib import contextmanager
+from subprocess import run
 from typing import cast
-from subprocess import PIPE, run
 
-import scruft
 import git
+import scruft
 
-from .manifest import parse_manifest, Repo
+from .manifest import Repo, parse_manifest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,9 +25,7 @@ COMMIT_MSG = "Apply cruft updates"
 
 
 @contextmanager
-def repo_working_dir(
-    repo: Repo, worktree: pathlib.Path | None
-) -> Generator[git.Repo, None, None]:
+def repo_working_dir(repo: Repo, worktree: pathlib.Path | None) -> Generator[git.Repo]:
     """Open the repository locally."""
     if worktree:
         yield git.Repo.init(worktree)
@@ -57,8 +55,7 @@ def verify_gh_auth() -> None:
     result = run(
         ["gh", "auth", "status"],
         check=True,
-        stdout=PIPE,
-        stderr=PIPE,
+        capture_output=True,
     )
     _LOGGER.debug("gh auth status: %s", result.stdout.decode())
 
@@ -109,8 +106,8 @@ def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> str:
             "main",
         ],
         cwd=str(git_repo.working_dir),
-        stdout=PIPE,
-        stderr=PIPE,
+        check=False,
+        capture_output=True,
     )
     if result.returncode != 0:
         stderr_decoded = result.stderr.decode()

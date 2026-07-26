@@ -1,10 +1,10 @@
 """Checks to perform on the contents of github repository worktree."""
 
-from collections.abc import Generator
-from contextlib import contextmanager
 import logging
 import pathlib
 import tempfile
+from collections.abc import Generator
+from contextlib import contextmanager
 
 import git
 
@@ -13,7 +13,6 @@ from repo_conformance.manifest import Repo
 
 from .registries import REPO_CHECKS, WORKTREE_CHECKS
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -21,7 +20,7 @@ CLONE_URL_FORMAT = "https://github.com/{user}/{repo}.git"
 
 
 @contextmanager
-def repo_worktree(repo: Repo) -> Generator[pathlib.Path, None, None]:
+def repo_worktree(repo: Repo) -> Generator[pathlib.Path]:
     """Open the repository locally."""
     with tempfile.TemporaryDirectory() as worktree:
         git_repo = git.Repo.init(worktree)

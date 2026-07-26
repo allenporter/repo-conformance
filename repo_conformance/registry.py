@@ -4,13 +4,12 @@ This is generic in that it can support different types of inputs/outputs
 so that you can have checks at various levels (e.g. reusing state).
 """
 
-from collections.abc import Callable
 import logging
-from typing import TypeVar, Generic
+from collections.abc import Callable
+from typing import TypeVar
 
 from .exceptions import CheckError, Failure
 from .manifest import Repo
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ T = TypeVar("T")
 Check = Callable[[Repo, T], None]
 
 
-class CheckRegistry(Generic[T]):
+class CheckRegistry[T]:
     """Registry for check implementations.
 
     Typically using includes instantiating an instance of this object
@@ -36,7 +35,7 @@ class CheckRegistry(Generic[T]):
         """Class method to register a check."""
 
         def wrapper(wrapped_class: Check[T]) -> Check:
-            name = getattr(wrapped_class, "__name__")
+            name = getattr(wrapped_class, "__name__", str(wrapped_class))
             if name in self._registry:
                 raise ValueError(
                     f"Misconfiguration with duplicate registry entry '{name}'"
