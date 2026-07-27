@@ -1,6 +1,6 @@
 {
   "template": "http://github.com/allenporter/cookiecutter-python",
-  "commit": "12bdbfb31b4069379be3f8c9c260ef7de64a0720",
+  "commit": "32dc5094164605f046b03eb68a0556f40f14577f",
   "checkout": null,
   "context": {
     "cookiecutter": {
