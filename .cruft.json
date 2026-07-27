@@ -1,6 +1,6 @@
 {
   "template": "http://github.com/allenporter/cookiecutter-python",
-  "commit": "47a481aafe9c60b6301949d509683d8b66da9114",
+  "commit": "1fad7bccf0b457ad18221f9454115126bf6e7a6b",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -11,7 +11,7 @@
       "description": "Conformance tests for all of my git repositories.",
       "version": "0.0.1",
       "_template": "http://github.com/allenporter/cookiecutter-python",
-      "_commit": "47a481aafe9c60b6301949d509683d8b66da9114"
+      "_commit": "1fad7bccf0b457ad18221f9454115126bf6e7a6b"
     }
   },
   "directory": null
