@@ -2,6 +2,7 @@
 
 import logging
 import pathlib
+import re
 import tempfile
 from argparse import ArgumentParser, BooleanOptionalAction
 from argparse import _SubParsersAction as SubParsersAction
@@ -113,8 +114,6 @@ def push_and_create_pr(git_repo: git.Repo, dry_run: bool = False) -> str:
         stderr_decoded = result.stderr.decode()
         if "already exists" in stderr_decoded:
             _LOGGER.info("Pull request already exists for this branch.")
-            import re
-
             urls = re.findall(r"https://github.com/[^\s]+", stderr_decoded)
             return urls[0] if urls else "PR already exists"
         raise ValueError(

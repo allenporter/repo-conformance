@@ -11,6 +11,7 @@ on:
 
 jobs:
   update:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -59,6 +60,11 @@ jobs:
 
           if [ -n "$(find . -name '*.rej')" ]; then
             echo "Error: Cruft template update produced merge conflicts (.rej files). Please resolve manually."
+            exit 1
+          fi
+
+          if grep -rn 'cookiecutter\.' . --exclude-dir=.git --exclude=.cruft.json; then
+            echo "Error: Unrendered Cookiecutter Jinja tags detected in repository!"
             exit 1
           fi
 
