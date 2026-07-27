@@ -154,9 +154,6 @@ dmypy.json
 
 .DS_Store
 
-# Merge conflict rejects
-*.rej
-
 # Workspace scratch and worktrees
 /tmp/
 /worktrees/
