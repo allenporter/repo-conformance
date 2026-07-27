@@ -156,3 +156,15 @@ dmypy.json
 
 # Merge conflict rejects
 *.rej
+
+# Workspace scratch and worktrees
+/tmp/
+/worktrees/
+/*-repair/
+/*-cruft/
+/*-pr*/
+/synthetic-home/
+/pyrainbird/
+/tmp_*/
+/gcal_sync_work/
+/adk-claw/
