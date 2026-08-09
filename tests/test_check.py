@@ -3,6 +3,7 @@
 import json
 import subprocess
 from pathlib import Path
+from typing import Self
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +25,7 @@ class FakeHttpResponse:
     def read(self) -> bytes:
         return self._content
 
-    def __enter__(self) -> "FakeHttpResponse":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -43,9 +44,11 @@ def test_fetch_remote_cruft_config_success() -> None:
 
 def test_fetch_remote_cruft_config_failure() -> None:
     """Test handling of HTTP error when fetching remote .cruft.json."""
-    with patch("urllib.request.urlopen", side_effect=OSError("Network error")):
-        with pytest.raises(CheckError, match="Failed to fetch .cruft.json"):
-            fetch_remote_cruft_config("allenporter", "nonexistent")
+    with (
+        patch("urllib.request.urlopen", side_effect=OSError("Network error")),
+        pytest.raises(CheckError, match="Failed to fetch .cruft.json"),
+    ):
+        fetch_remote_cruft_config("allenporter", "nonexistent")
 
 
 def test_get_latest_commit_caching() -> None:
@@ -77,10 +80,12 @@ def test_check_action_runs_fast_cruft(tmp_path: Path) -> None:
     action = CheckAction()
     cruft_file = tmp_path / ".cruft.json"
     cruft_file.write_text(
-        json.dumps({
-            "template": "https://github.com/allenporter/cookiecutter-python",
-            "commit": "abc1234",
-        })
+        json.dumps(
+            {
+                "template": "https://github.com/allenporter/cookiecutter-python",
+                "commit": "abc1234",
+            }
+        )
     )
 
     repo = Repo(name="ical", user="allenporter")
@@ -91,9 +96,7 @@ def test_check_action_runs_fast_cruft(tmp_path: Path) -> None:
     )
 
     with (
-        patch(
-            "repo_conformance.check.parse_manifest", return_value=fake_manifest
-        ),
+        patch("repo_conformance.check.parse_manifest", return_value=fake_manifest),
         patch(
             "repo_conformance.checks.cruft.get_latest_commit",
             return_value="abc1234",
