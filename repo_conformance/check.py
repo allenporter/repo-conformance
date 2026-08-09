@@ -1,5 +1,6 @@
 """Action to check repositories for conformance."""
 
+import concurrent.futures
 import logging
 import pathlib
 import re
@@ -10,9 +11,11 @@ from typing import cast
 
 from .checks.registries import REPO_CHECKS
 from .exceptions import Failure
-from .manifest import parse_manifest
+from .manifest import Repo, parse_manifest
 
 _LOGGER = logging.getLogger(__name__)
+
+MAX_WORKERS = 10
 
 
 def print_errors(errors: list[Failure]) -> None:
@@ -85,7 +88,8 @@ class CheckAction:
         if exclude:
             _LOGGER.debug("Excluding checks: %s", exclude)
         manifest = parse_manifest()
-        errors = []
+
+        target_repos: list[Repo] = []
         for r in manifest.repos:
             if repo and r.name != repo:
                 continue
@@ -101,7 +105,19 @@ class CheckAction:
             )
             if worktree:
                 r.worktree = str(worktree)
-            errors.extend([fail.of(r.name) for fail in REPO_CHECKS.run_checks(r, None)])
+            target_repos.append(r)
+
+        def _check_repo(target: Repo) -> list[Failure]:
+            return [
+                fail.of(target.name) for fail in REPO_CHECKS.run_checks(target, None)
+            ]
+
+        errors: list[Failure] = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            future_to_repo = {executor.submit(_check_repo, r): r for r in target_repos}
+            for future in concurrent.futures.as_completed(future_to_repo):
+                errors.extend(future.result())
+
         if errors:
             print_errors(errors)
             sys.exit(1)
