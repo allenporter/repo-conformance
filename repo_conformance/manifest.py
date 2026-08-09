@@ -79,6 +79,10 @@ def parse_manifest() -> Manifest:
     with open(MANIFEST) as fd:
         content = fd.read()
     try:
-        return yaml_decode(content, Manifest)
+        manifest = yaml_decode(content, Manifest)
+        for repo in manifest.repos:
+            if not repo.user:
+                repo.user = manifest.user
+        return manifest
     except yaml.YAMLError as err:
         raise ManifestError(f"Unable to parse manifest {MANIFEST}: {err}") from err

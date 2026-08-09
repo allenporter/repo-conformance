@@ -3,10 +3,10 @@
 import logging
 import pathlib
 import tempfile
+import urllib.error
+import urllib.request
 from collections.abc import Generator
 from contextlib import contextmanager
-
-import git
 
 from repo_conformance.exceptions import CheckError
 from repo_conformance.manifest import Repo
@@ -17,33 +17,43 @@ _LOGGER = logging.getLogger(__name__)
 
 
 CLONE_URL_FORMAT = "https://github.com/{user}/{repo}.git"
+RAW_CRUFT_URL_FORMAT = (
+    "https://raw.githubusercontent.com/{user}/{repo}/main/.cruft.json"
+)
+
+
+def fetch_remote_cruft_config(user: str, repo_name: str) -> bytes:
+    """Fetch .cruft.json directly via raw HTTP to avoid full git fetch overhead."""
+    url = RAW_CRUFT_URL_FORMAT.format(user=user, repo=repo_name)
+    req = urllib.request.Request(url, headers={"User-Agent": "repo-conformance"})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return response.read()
+    except urllib.error.HTTPError as err:
+        if err.code == 404:
+            raise CheckError(
+                f"Repo '{user}/{repo_name}' has no .cruft.json configuration file"
+            ) from err
+        raise CheckError(
+            f"Failed to fetch .cruft.json for '{user}/{repo_name}' (HTTP {err.code}): {err}"
+        ) from err
+    except (urllib.error.URLError, TimeoutError, OSError) as err:
+        raise CheckError(
+            f"Failed to fetch .cruft.json for '{user}/{repo_name}': {err}"
+        ) from err
 
 
 @contextmanager
 def repo_worktree(repo: Repo) -> Generator[pathlib.Path]:
     """Open the repository locally."""
+    if not repo.user:
+        raise ValueError(f"Repository '{repo.name}' missing user configuration")
+
     with tempfile.TemporaryDirectory() as worktree:
-        git_repo = git.Repo.init(worktree)
-        origin = git_repo.create_remote(
-            "origin", CLONE_URL_FORMAT.format(user=repo.user, repo=repo.name)
-        )
-        if not origin.exists():
-            raise CheckError("Failure to setup repo origin")
-
-        origin.fetch()
-
-        if not origin.refs.main:
-            raise CheckError("Git repo does not have main branch")
-        main = git_repo.create_head("main", origin.refs.main)
-        main.set_tracking_branch(origin.refs.main)
-        main.checkout()
-
-        if git_repo.is_dirty():
-            raise CheckError("Local clone of repository is dirty")
-        if git_repo.untracked_files:
-            raise CheckError("Local clone of repository has untracked files")
-
-        yield pathlib.Path(worktree)
+        worktree_path = pathlib.Path(worktree)
+        cruft_bytes = fetch_remote_cruft_config(repo.user, repo.name)
+        (worktree_path / ".cruft.json").write_bytes(cruft_bytes)
+        yield worktree_path
 
 
 @REPO_CHECKS.register()
