@@ -9,7 +9,7 @@ pytest==9.1.1
 ruff==0.16.10
 
 
-json5==0.15.0
+json5==0.16.0
 GitPython==3.2.0
 mashumaro==3.23
 pytest-asyncio==1.4.0
