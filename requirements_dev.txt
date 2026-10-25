@@ -12,7 +12,7 @@ ruff==0.17.2
 json5==0.17.3
 GitPython==3.2.1
 mashumaro==3.23
-pytest-asyncio==1.4.0
+pytest-asyncio==1.4.1
 PyGithub==2.10.0
 PyYAML==6.0.3
 types-PyYAML==6.0.12.20260906
