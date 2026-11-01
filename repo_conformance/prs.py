@@ -48,18 +48,21 @@ def get_ci_status(checks: list[dict], color: bool = True) -> str:
     has_pending = False
 
     for check in checks:
-        status = check.get("status")
-        conclusion = check.get("conclusion")
-        state = check.get("state")
+        status = (check.get("status") or "").upper()
+        conclusion = (check.get("conclusion") or "").upper()
+        state = (check.get("state") or "").upper()
 
-        if (
-            conclusion == "FAILURE"
-            or state == "FAILURE"
-            or conclusion == "failed"
-            or state == "failed"
-        ):
+        if conclusion in [
+            "FAILURE",
+            "FAILED",
+            "ACTION_REQUIRED",
+            "TIMED_OUT",
+            "STARTUP_FAILURE",
+            "CANCELLED",
+            "STALE",
+        ] or state in ["FAILURE", "FAILED", "ERROR"]:
             has_failure = True
-        elif status in ["IN_PROGRESS", "QUEUED", "pending", "expected"] or (
+        elif status in ["IN_PROGRESS", "QUEUED", "PENDING", "EXPECTED", "WAITING"] or (
             not conclusion and not state
         ):
             has_pending = True
@@ -266,6 +269,14 @@ class PrsAction:
             default=False,
             action=BooleanOptionalAction,
         )
+        args.add_argument(
+            "--blocked",
+            "--failing",
+            help="Filter to show only PRs with failing/blocked CI checks or merge conflicts",
+            default=False,
+            action=BooleanOptionalAction,
+            dest="blocked",
+        )
         args.set_defaults(cls=PrsAction)
         return args
 
@@ -281,6 +292,7 @@ class PrsAction:
         allow_major: bool = False,
         yes: bool = False,
         dry_run: bool = False,
+        blocked: bool = False,
         client: GitHubClient | None = None,
         **kwargs,  # pylint: disable=unused-argument
     ) -> None:
@@ -428,6 +440,10 @@ class PrsAction:
                         grouped["ready"].append(pr)
                     else:
                         grouped["pending"].append(pr)
+
+                if blocked:
+                    grouped["ready"] = []
+                    grouped["pending"] = []
 
                 repos_data.append((r.name, repo_fullname, grouped))
 

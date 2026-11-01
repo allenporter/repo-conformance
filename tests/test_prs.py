@@ -319,3 +319,35 @@ def test_prs_renovate_allow_major_includes_major_bump_with_fake(
     # Self-authored PRs MUST STILL BE EXCLUDED
     assert ("allenporter/test-repo", 201) not in fake_client.merged_prs
     assert ("allenporter/test-repo", 202) not in fake_client.merged_prs
+
+
+@patch("repo_conformance.prs.parse_manifest")
+def test_prs_blocked_filter(
+    mock_parse_manifest: MagicMock,
+) -> None:
+    """Verify that --blocked filters down to ONLY PRs requiring attention (failing CI, conflicts, rej files)."""
+
+    mock_manifest = Manifest(
+        user="allenporter", repos=[Repo(name="test-repo", user="allenporter")]
+    )
+    mock_parse_manifest.return_value = mock_manifest
+
+    fake_client = FakeGitHubClient({"allenporter/test-repo": MOCK_PRS_PAYLOAD})
+
+    action = PrsAction()
+    with patch("builtins.print") as mock_print:
+        action.run(
+            repo=None,
+            blocked=True,
+            client=fake_client,
+        )
+
+        printed_lines = [
+            call.args[0] for call in mock_print.call_args_list if call.args
+        ]
+
+        # Only PR #302 (has .rej files -> attention) should be in printed output
+        assert any("#302" in line for line in printed_lines)
+        # Passing PRs #101, #102, #201, #202, #301 should NOT be displayed when --blocked is set
+        assert not any("#101" in line for line in printed_lines)
+        assert not any("#301" in line for line in printed_lines)

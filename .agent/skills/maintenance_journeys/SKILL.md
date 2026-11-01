@@ -73,5 +73,5 @@ If a PR requires manual review (e.g., a major version upgrade with API changes),
 ### Step 3: Escalate and Flag Failures
 If a template update PR fails checks or has merge conflicts, the agent:
 1. Does **not** merge the PR.
-2. Runs `gh pr checks` to extract the error log URLs.
-3. Updates the **Executive Cockpit** (`dashboard/active_inbox.md` in `opensource-ops`) to flag the repository under the `🚨 Attention Required` maintenance section, detailing the exact error and log URLs so the operator can inspect it during their Saturday Review.
+2. Runs `gh pr checks` or `uv run repo prs <repo> --checks` to extract the error log URLs.
+3. Runs `uv run repo dashboard --export REPOS_HEALTH.md` to flag the repository under the local repository health dashboard, detailing any failing checks or conflicts for human review.

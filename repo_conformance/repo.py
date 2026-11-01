@@ -9,6 +9,8 @@ from typing import Any
 import yaml
 
 from .check import CheckAction
+from .ci import CiAction
+from .dashboard import DashboardAction
 from .list import ListAction
 from .list_repos import ListReposAction
 from .prs import PrsAction
@@ -47,6 +49,8 @@ def main() -> None:
     CheckAction.register(subparsers)
     UpdateRepoAction.register(subparsers)
     PrsAction.register(subparsers)
+    CiAction.register(subparsers)
+    DashboardAction.register(subparsers)
 
     args = parser.parse_args()
     if args.log_level:

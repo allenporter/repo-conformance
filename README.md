@@ -66,5 +66,18 @@ $ repo prs
 ### Supported `prs` Flags:
 *   `--renovate`: Filter to show only Renovate dependency PRs.
 *   `--cruft`: Filter to show only Cruft template update PRs.
+*   `--blocked` / `--failing`: Filter to show only PRs with failing/blocked CI checks or merge conflicts.
 *   `--author <user>` (e.g., `--author me`): Filter PRs by a specific author.
 *   `--health`: Print an aggregated dashboard showing open/passed/failed/pending counts per repository.
+
+To inspect main branch GitHub Actions CI statuses across all repositories, use the `repo ci` command:
+```bash
+$ repo ci
+$ repo ci --failed
+```
+
+To display a unified repository health dashboard or export it to a local markdown file, use `repo dashboard`:
+```bash
+$ repo dashboard
+$ repo dashboard --export REPOS_HEALTH.md
+```

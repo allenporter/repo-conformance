@@ -155,6 +155,7 @@ dmypy.json
 .DS_Store
 
 # Workspace scratch and worktrees
+/REPOS_HEALTH.md
 /tmp/
 /worktrees/
 /*-repair/
