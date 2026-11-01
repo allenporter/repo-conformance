@@ -46,18 +46,6 @@ repos:
   checks:
     include:
     - cruft
-- name: adk-claw
-  checks:
-    include:
-    - cruft
-- name: adk-coder
-  checks:
-    include:
-    - cruft
-- name: home-assistant-google-adk
-  checks:
-    include:
-    - cruft
 - name: supernote
   checks:
     include:
@@ -72,10 +60,6 @@ repos:
     include:
     - cruft
 - name: home-assistant-synthetic-home
-  checks:
-    include:
-    - cruft
-- name: home-assistant-rulebook
   checks:
     include:
     - cruft
@@ -97,6 +81,8 @@ ignored_repos:
 - name: cookiecutter-home-assistant-custom-component
 
 # Model Context Protocol (MCP) & AI/LLM Tools
+- name: adk-claw
+- name: adk-coder
 - name: home-assistant-model-context-protocol
 - name: mcp-server-home-assistant
 - name: gpt3-python-helper
@@ -104,6 +90,8 @@ ignored_repos:
 - name: functionary-server
 
 # Home Assistant Integrations & Helper Utilities (Ignored/Inactive)
+- name: home-assistant-google-adk
+- name: home-assistant-rulebook
 - name: hass-local-calendar
 - name: hass-openai-custom-conversation
 - name: home-assistant-openid-auth-provider
