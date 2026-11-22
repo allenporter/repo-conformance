@@ -29,14 +29,19 @@ uv run repo prs --health
 ```
 
 ### Step 2: Auto-Merge Low-Risk / Green Upgrades
-Merge all the low-risk dependency and template upgrades that have fully passed CI checks:
+Merge low-risk dependency and template upgrades that have fully passed CI checks. **An explicit category filter (`--renovate` or `--cruft`) is required** — naked `--merge` without a category filter is disabled for safety:
 ```bash
-uv run repo prs --merge
+# Preview candidates first
+uv run repo prs --renovate --merge --dry-run
+uv run repo prs --cruft --merge --dry-run
+
+# Merge passing Renovate or Cruft PRs (add --yes to skip confirmation)
+uv run repo prs --renovate --merge
+uv run repo prs --cruft --merge
 ```
-This runs safety checks to ensure only trusted authors (`allenporter` or Renovate bots) and approved/auto-mergeable PRs are targetable. It lists the candidate PRs and prompts for confirmation. To skip the prompt (e.g. in automated scripts), run:
-```bash
-uv run repo prs --merge --yes
-```
+This runs safety checks to ensure only trusted authors (`allenporter` or Renovate bots) and approved/auto-mergeable PRs are targetable.
+- Add `--allow-major` to include major version upgrades (always inspect with `--dry-run` first).
+- Add `--all --blocked` to inspect blocked/failing non-Renovate PRs across all repos.
 
 ### Step 3: Diagnose Failed Checks
 For any PR listed in the `🔴 Attention Required` section, inspect the detailed CI checks to see why they failed:
@@ -64,9 +69,10 @@ uv run repo update_repo <repo_name>
 If a repository is already up-to-date, the command finishes immediately. If changes are detected, it creates a `cruft-update` branch, commits the updates, and opens a GitHub Pull Request.
 
 ### Step 2: Safety Check and Auto-Merge
-The agent runs a scan to find open PRs that are fully green and safe to merge:
+The agent runs a scan to find open PRs that are fully green and safe to merge (explicit category filter required):
 ```bash
-uv run repo prs --merge --yes
+uv run repo prs --cruft --merge --yes
+uv run repo prs --renovate --merge --yes
 ```
 If a PR requires manual review (e.g., a major version upgrade with API changes), the safety check in `prs.py` blocks the auto-merge.
 
